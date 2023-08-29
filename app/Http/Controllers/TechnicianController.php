@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Technician;
 use Illuminate\Http\Request;
 
 class TechnicianController extends Controller
@@ -12,6 +13,9 @@ class TechnicianController extends Controller
     public function index()
     {
         //
+        $technicians = Technician::all();
+        return view('technicians.index')
+            ->with('technicians', $technicians);
     }
 
     /**
