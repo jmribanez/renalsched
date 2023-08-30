@@ -24,6 +24,11 @@ class TechnicianController extends Controller
     public function create()
     {
         //
+        $modalMode = "create";
+        $technicians = Technician::all();
+        return view('technicians.index')
+            ->with('modalMode', $modalMode)
+            ->with('technicians', $technicians);
     }
 
     /**
@@ -32,6 +37,13 @@ class TechnicianController extends Controller
     public function store(Request $request)
     {
         //
+        $this->validate($request, ['isSenior'=>'required']);
+        $technician = new Technician();
+        $technician->isSenior = $request->isSenior;
+        if(!empty($request->name_family)) $technician->name_family = $request->name_family;
+        if(!empty($request->name_first)) $technician->name_first = $request->name_first;
+        $technician->save();
+        return redirect('technicians')->with('success','Technician created.');
     }
 
     /**
@@ -48,6 +60,13 @@ class TechnicianController extends Controller
     public function edit(string $id)
     {
         //
+        $modalMode = "edit";
+        $technicians = Technician::all();
+        $technician = Technician::find($id);
+        return view('technicians.index')
+            ->with('technician', $technician)
+            ->with('modalMode', $modalMode)
+            ->with('technicians', $technicians);
     }
 
     /**

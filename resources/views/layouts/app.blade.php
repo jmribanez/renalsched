@@ -13,6 +13,7 @@
     <link rel="dns-prefetch" href="//fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
     <script src="https://kit.fontawesome.com/26ed367001.js" crossorigin="anonymous"></script>
+    
     <!-- Scripts -->
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 </head>
@@ -24,10 +25,13 @@
         </a>
   
         <ul class="nav">
-          <li class="nav-item"><a href="#" class="nav-link" aria-current="page">Home</a></li>
-          <li class="nav-item"><a href="#" class="nav-link">Technicians</a></li>
+          <li class="nav-item"><a href="/" class="nav-link" aria-current="page">Home</a></li>
+          <li class="nav-item"><a href="{{url('technicians')}}" class="nav-link">Technicians</a></li>
         </ul>
     </header>
+    <div class="container">
+      @include('inc.messages')
+    </div>
     @yield('content')
 </body>
 </html>
