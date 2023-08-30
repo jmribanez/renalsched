@@ -4,7 +4,7 @@
     <div class="d-flex justify-content-between align-items-middle mb-2">
         <h1 class="mb-0">Technicians</h1>
         <div>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal"><i class="fa-solid fa-user-plus"></i> New Technician</button>
+            <a href="{{route('technicians.create')}}" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> New Technician</a>
         </div>
     </div>
     <div>
@@ -26,9 +26,9 @@
                 @foreach ($technicians as $t)
                 <tr>
                     <td>{{$t->id}}</td>
-                    <td>{{($t->isSenior)?"Senior":"Regular"}}</td>
+                    <td>{{($t->isSenior)?"Senior":"Ordinary"}}</td>
                     <td>{{$t->name_family}}</td>
-                    <td class="d-flex justify-content-between align-items-middle"><div>{{$t->name_first}}</div><div><a href="{{route('technicians.edit',$t->id)}}"><i class="fa-solid fa-pencil"></i></a></div></td>
+                    <td class="d-flex justify-content-between align-items-middle"><div>{{$t->name_first}}</div><div><a href="{{route('technicians.edit',$t->id)}}" class="me-3"><i class="fa-solid fa-pencil"></i></a> <a href="#"><i class="fa-regular fa-calendar-days"></i></a></div></td>
                 </tr>
                 @endforeach
                 @endif
@@ -36,22 +36,30 @@
         </table>
     </div>
 </div>
+@if(isset($modalMode))
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog">
-        <form class="modal-content" method="POST" action="{{route('technicians.store')}}">
+        <div class="modal-content">
             <div class="modal-header">
-                <h1 class="modal-title fs-5">Add Technician</h1>
+                <h1 class="modal-title fs-5" id="modalTitle">Add Technician</h1>
                 <button class="btn-close" type="button" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <form id="technicianForm" class="modal-body" method="POST" action="{{($modalMode=='Edit')?route('technicians.update',$technician->id):route('technicians.store')}}">
                 @csrf
-                @method('POST')
+                @if($modalMode=='New')
+                    @method('put')
+                @else
+                    @method('patch')
+                @endif
+                @if(isset($technician))
+                <input type="hidden" name="id" value="{{$technician->id}}">
+                @endif
                 <div class="mb-3">
                     <label for="selIsSenior" class="form-label">Seniority</label>
                     <select name="isSenior" id="selIsSenior" class="form-select" value="{{$technician->isSenior??''}}">
-                        <option disabled {{!isset($technician->isSenior)?selected:''}}>Select seniority</option>
+                        <option disabled {{!isset($technician->isSenior)?'selected':''}}>Select seniority</option>
                         <option value="1" {{isset($technician->isSenior)?($technician->isSenior=="1")?'selected':'':''}}>Senior</option>
-                        <option value="0" {{isset($technician->isSenior)?($technician->isSenior=="0")?'selected':'':''}}>Regular</option>
+                        <option value="0" {{isset($technician->isSenior)?($technician->isSenior=="0")?'selected':'':''}}>Ordinary</option>
                     </select>
                 </div>
                 <div class="mb-3">
@@ -62,20 +70,28 @@
                     <label for="txtNameFirst" class="form-label">First Name</label>
                     <input type="text" name="name_first" id="txtNameFirst" class="form-control" value="{{$technician->name_first??''}}">
                 </div>
-            </div>
+            </form>
             <div class="modal-footer">
+                @if(isset($technician))
+                <form id="technicianDelete" class="me-auto" action="{{route('technicians.destroy',$technician->id)}}" method="post">
+                @csrf
+                @method('delete')
+                <input type="hidden" name="id" value="{{$technician->id}}">
+                <input type="submit" value="Delete" class="btn btn-outline-danger">
+                </form>
+                @endif
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary">Save changes</button>
+                <button type="submit" form="technicianForm" class="btn btn-primary">Save changes</button>
             </div>
-        </form>
+        </div>
     </div>
 </div>
-@if(!empty($modalMode))
+
 <script>
     window.onload = function() {
         var myModal = new Modal(document.getElementById('editModal'));
         myModal.show();
-        // CONTINUE: MODAL MODE DETERMINES TEXT IN MODAL: CREATE, EDIT
+        document.getElementById('modalTitle').innerHTML = "{{$modalMode.' Technician'}}";
     }
 </script>
 @endif
