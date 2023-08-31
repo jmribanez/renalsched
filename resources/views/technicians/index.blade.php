@@ -47,7 +47,7 @@
             <form id="technicianForm" class="modal-body" method="POST" action="{{($modalMode=='Edit')?route('technicians.update',$technician->id):route('technicians.store')}}">
                 @csrf
                 @if($modalMode=='New')
-                    @method('put')
+                    @method('post')
                 @else
                     @method('patch')
                 @endif

@@ -16,4 +16,12 @@ class Technician extends Model
     public function schedules(): HasMany {
         return $this->hasMany(Schedule::class);
     }
+
+    public static function getSenior() {
+        return self::where('isSenior','1')->get()->count();
+    }
+
+    public static function getOrdinary() {
+        return self::where('isSenior','0')->get()->count();
+    }
 }

@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Technician;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
     //
     public function index() {
-        return view('welcome');
+        $seniorCount = Technician::getSenior();
+        $ordinaryCount = Technician::getOrdinary();
+        return view('welcome')
+            ->with('seniorCount', $seniorCount)
+            ->with('ordinaryCount', $ordinaryCount);
     }
 }
