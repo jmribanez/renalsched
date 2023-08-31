@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\TechnicianController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,3 +18,5 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class,'index']);
 Route::resource('technicians', TechnicianController::class);
+Route::get('/schedules/{year?}/{month?}',[ScheduleController::class, 'index']);
+Route::post('/schedules/generate', [ScheduleController::class,'generate'])->name('schedules.generate');
