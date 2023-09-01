@@ -24,4 +24,8 @@ class Technician extends Model
     public static function getOrdinary() {
         return self::where('isSenior','0')->get()->count();
     }
+
+    public static function getTechnicians() {
+        return self::all();
+    }
 }

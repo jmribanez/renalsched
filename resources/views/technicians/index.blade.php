@@ -28,7 +28,7 @@
                     <td>{{$t->id}}</td>
                     <td>{{($t->isSenior)?"Senior":"Ordinary"}}</td>
                     <td>{{$t->name_family}}</td>
-                    <td class="d-flex justify-content-between align-items-middle"><div>{{$t->name_first}}</div><div><a href="{{route('technicians.edit',$t->id)}}" class="me-3"><i class="fa-solid fa-pencil"></i></a> <a href="#"><i class="fa-regular fa-calendar-days"></i></a></div></td>
+                    <td class="d-flex justify-content-between align-items-middle"><div>{{$t->name_first}}</div><div><a href="{{route('technicians.edit',$t->id)}}" class="me-3"><i class="fa-solid fa-pencil"></i></a></div></td>
                 </tr>
                 @endforeach
                 @endif

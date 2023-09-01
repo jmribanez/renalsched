@@ -9,7 +9,7 @@
                     <h3 class="">Make a Schedule</h3>
                     <div class="input-group my-3">
                         @csrf
-                        <select name="month" id="selMonth" class="form-select form-select-lg" required>
+                        <select name="month" id="selMonth" class="form-select form-select-lg rounded-start" required>
                             <option disabled selected>Month</option>
                             <option value="1">January</option>
                             <option value="2">February</option>
@@ -48,9 +48,9 @@
                 </form>
             </div>
             <div class="col-sm-8 bg-white p-4 rounded-3">
-                <h3>Generated Schedules</h3>
-                @if(empty($generatedMonths))
-                <p>There are currently no generated schedules. Select a month and year on the left then click the Generate button to create schedules.</p>
+                <h3 class="mb-3">Generated Schedules</h3>
+                @if(count($generatedMonths)<1)
+                <p><em>There are currently no generated schedules.</em></p><p>Select a month and year on the left then click the Generate button to create schedules.</p>
                 @else
                 <div class="row row-cols-4 g-4">
                     @foreach ($generatedMonths as $gM)
