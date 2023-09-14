@@ -17,8 +17,8 @@ class ScheduleController extends Controller
         // Create generated date
         $year = $year??date('Y');
         $month = $month??date('m');
-        $generatedMonth = date_create(($year)."-".($month)."-01");
-        $scheduleMonth = Schedule::getMonth($year,$month);
+        $generatedMonth = date_create(($year)."-".($month)."-01");          // generatedMonth is the current month's date object
+        $scheduleMonth = Schedule::getMonth($year,$month);                  // scheduleMonth is the schedule of all technicians for the month
         $calendarDays = cal_days_in_month(CAL_GREGORIAN,$month,$year);
         $prevYear = $year;
         $prevMonth = $month-1;

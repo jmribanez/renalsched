@@ -32,4 +32,8 @@ class Schedule extends Model
             ->orderBy('technician_id')
             ->get();
     }
+
+    public static function getMonthShiftCount($year, $month) {
+        
+    }
 }

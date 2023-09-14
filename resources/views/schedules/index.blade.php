@@ -35,21 +35,21 @@
                     @endfor
                 </tr>
                 @if(count($scheduleMonth)<1)
-                <tr><td colspan="{{$calendarDays+2}}"><p class="pt-3">There are no schedules generated for this month.</p>
-                <p>Create a schedule by selecting options in the homepage of this site and clicking Generate.</p></td></tr>
+                    <tr><td colspan="{{$calendarDays+2}}"><p class="pt-3">There are no schedules generated for this month.</p>
+                    <p>Create a schedule by selecting options in the homepage of this site and clicking Generate.</p></td></tr>
                 @else
-                @foreach($scheduleMonth as $sm)
-                <?php $smdate = date_create($sm->schedule); $smdate = date_format($smdate,"d") ?>
-                @if($smdate=="01")
-                <tr>
-                    <td>{{$sm->technician_id}}</td>
-                    <td></td>
-                @endif
-                <td>{{$sm->shift}}</td>
-                @if($smdate=="31")
-                </tr>
-                @endif
-                @endforeach
+                    @foreach($scheduleMonth as $sm)
+                        <?php $smdate = date_create($sm->schedule); $smdate = date_format($smdate,"d"); ?>
+                        @if($smdate=="01")
+                            <tr>
+                                <td>{{$sm->technician_id}}</td>
+                                <td></td>
+                        @endif
+                        <td>{{$sm->shift}}</td>
+                        @if($smdate==$calendarDays)
+                            </tr>
+                        @endif
+                    @endforeach
                 @endif
             </tbody>
         </table>
