@@ -20,6 +20,43 @@ class ScheduleController extends Controller
         $generatedMonth = date_create(($year)."-".($month)."-01");          // generatedMonth is the current month's date object
         $scheduleMonth = Schedule::getMonth($year,$month);                  // scheduleMonth is the schedule of all technicians for the month
         $calendarDays = cal_days_in_month(CAL_GREGORIAN,$month,$year);
+
+        // Create an array for the number of staff per shift
+        $dawShift = array_fill(0, $calendarDays+1, 0);
+        $morShift = array_fill(0, $calendarDays+1, 0);
+        $aftShift = array_fill(0, $calendarDays+1, 0);
+        $eveShift = array_fill(0, $calendarDays+1, 0);
+        $offShift = array_fill(0, $calendarDays+1, 0);
+        $staffDay = array_fill(0, $calendarDays+1, 0);
+
+        // Read the scheduleMonth array to tally
+        foreach($scheduleMonth as $sm) {
+            $index = intval(date_format(date_create($sm->schedule),"j"));
+            switch($sm->shift) {
+                case 'D':
+                    $dawShift[$index]++;
+                    break;
+                case 'M':
+                    $morShift[$index]++;
+                    break;
+                case 'A':
+                    $aftShift[$index]++;
+                    break;
+                case 'E':
+                    $eveShift[$index]++;
+                    break;
+                default:
+                    $offShift[$index]++;
+                    break;
+            }
+            if($sm->shift!='O') {
+                $staffDay[$index]++;
+            }
+        }
+        $staffPerShift = array($dawShift,$morShift,$aftShift,$eveShift,$offShift);
+
+        
+        // Create previous and next dates
         $prevYear = $year;
         $prevMonth = $month-1;
         if($prevMonth<1) {
@@ -34,9 +71,13 @@ class ScheduleController extends Controller
             $nextMonth = 1;
         }
         $nextDate = date_create(($nextYear)."-".($nextMonth)."-01");
+        
+        // Show the views
         return view('schedules.index')
             ->with('generatedMonth',$generatedMonth)
             ->with('scheduleMonth', $scheduleMonth)
+            ->with('staffPerShift', $staffPerShift)
+            ->with('staffDay',$staffDay)
             ->with('previousDate', $previousDate)
             ->with('nextDate', $nextDate)
             ->with('calendarDays', $calendarDays);

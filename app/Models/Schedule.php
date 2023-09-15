@@ -15,8 +15,8 @@ class Schedule extends Model
     public $incrementing = false;
     protected $fillable = ['schedule', 'technician_id', 'shift'];
 
-    public function technician(): BelongsTo {
-        return $this->belongsTo(Technician::class, 'technician_id');
+    public function technician() {
+        return $this->belongsTo('App\Models\Technician');
     }
 
     public static function getGeneratedMonths() {
@@ -28,12 +28,9 @@ class Schedule extends Model
 
     public static function getMonth($year, $month) {
         return DB::table('schedules')
+            ->join('technicians','schedules.technician_id','=','technicians.id')
             ->whereBetween('schedule', [$year.'-'.$month.'-01',$year.'-'.$month.'-31'])
             ->orderBy('technician_id')
             ->get();
-    }
-
-    public static function getMonthShiftCount($year, $month) {
-        
     }
 }

@@ -13,8 +13,8 @@ class Technician extends Model
 
     protected $fillable = ['isSenior', 'name_family', 'name_first'];
 
-    public function schedules(): HasMany {
-        return $this->hasMany(Schedule::class);
+    public function schedules() {
+        return $this->hasMany('App\Models\Post');
     }
 
     public static function getSenior() {
