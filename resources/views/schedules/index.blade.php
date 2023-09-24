@@ -15,7 +15,7 @@
                 <a href="/schedules/{{date_format($nextDate,"Y/m")}}" class="btn btn-secondary"><i class="fa-solid fa-forward"></i></a>
             </div>
         </div>
-        <table class="table table-striped-columns {{count($scheduleMonth)>0?'table-hover':'';}}">
+        <table class="table table-sm table-striped-columns {{count($scheduleMonth)>0?'table-hover':'';}}">
             <thead>
                 <tr>
                     <th>ID</th>

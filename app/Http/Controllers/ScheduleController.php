@@ -100,15 +100,45 @@ class ScheduleController extends Controller
         // Identify all calendar days
         $calendarDays = cal_days_in_month(CAL_GREGORIAN,$month,$year);
 
+        // Identify Sundays and Weekdays
+        $sundays = array();
+        $weekdays = array();
+        for($i=1; $i<=$calendarDays; $i++) {
+            if(substr(date_format(date_create(($year)."-".($month)."-".$i),"D"),0,2)=="Su")
+                array_push($sundays,$i);
+            else
+                array_push($weekdays,$i);
+        }
+
         // For the meantime, select all technicians, get all id's
         $technicians = Technician::getTechnicians();
 
+        // Start of initial solution
+        // initialSolution contains an array of arrays each representing a technician in order of their ID
+        // values of the arrays are the days of their shifts and what shift it is
+        $initialSolution = array();
         foreach($technicians as $t) {
             // For readability, skip index 0
             $days = array();
 
+            /**
+             * TODO: Foreach sunday, randomly assign one technician
+             *       Note who got assigned so they only need to work one Sunday.
+             * 
+             *       store all technician shift data to initialSolution
+             *       Then bestSolution is initialSolution for now
+             *       Modify code to store bestSolution in database
+             * 
+             *       
+             */
+
+            // By default, assign all Sundays to "O"
+            foreach($sundays as $sun) {
+                $days[$sun] = "O";
+            }
+
             // Randomly assign 8 off days
-            $offcount = 0;
+            $offcount = sizeof($sundays);
             while($offcount < 8){
                 $randomDay = rand(1,$calendarDays);
                 if(empty($days[$randomDay])) {
@@ -143,6 +173,18 @@ class ScheduleController extends Controller
             return "A";
         else    
             return "E";
+    }
+
+    /**
+     * This function computes the "brightness" of a firefly
+     */
+    private function getObjectiveFunctionValue() {
+        /**
+         * workingDays is an array of nTechnicians x nDays
+         * value gets compute Days Off penalization
+         * value getsadds compute Shift penalization
+         * value getsadds compute Shift Off penalization
+         */
     }
 
     /**
