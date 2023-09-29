@@ -88,9 +88,6 @@ class ScheduleController extends Controller
      */
     public function generate(Request $request)
     {
-        // For the meantime, generate will create a schedule for October 2023
-        // because Day 1 starts on a Sunday. Just for visualization purposes.
-
         // Validation of needed data
         $this->validate($request, ['month'=>'required','year'=>'required']);
 
@@ -110,16 +107,22 @@ class ScheduleController extends Controller
                 array_push($weekdays,$i);
         }
 
+        // Create the days counter
+        $sundaysCount = array_fill(0,sizeof($sundays),0);
+        $weekdaysCount = array_fill(0,sizeof($weekdays),0);
+
         // For the meantime, select all technicians, get all id's
         $technicians = Technician::getTechnicians();
 
         // Start of initial solution
-        // initialSolution contains an array of arrays each representing a technician in order of their ID
-        // values of the arrays are the days of their shifts and what shift it is
+        // initialSolution is an array of arrays each representing a technician and their shifts for the calendarMonth
+        // values of the arrays are their shifts for the day.
         $initialSolution = array();
         foreach($technicians as $t) {
-            // For readability, skip index 0
+            // the $days variable will now be the array fed to the $initialSolution array
             $days = array();
+            // $days[0] will be the technician id
+            $days[0] = $t->id;
 
             /**
              * TODO: Foreach sunday, randomly assign one technician
@@ -127,9 +130,7 @@ class ScheduleController extends Controller
              * 
              *       store all technician shift data to initialSolution
              *       Then bestSolution is initialSolution for now
-             *       Modify code to store bestSolution in database
-             * 
-             *       
+             *       Modify code to store bestSolution in database    
              */
 
             // By default, assign all Sundays to "O"
@@ -146,6 +147,10 @@ class ScheduleController extends Controller
                     $offcount++;
                 }
             }
+
+            // Assign Sundays
+
+            // Assign weekdays
 
             // Progressively assign random shifts if $days[index] is empty
             for($j=1; $j<=$calendarDays; $j++) {
@@ -173,6 +178,16 @@ class ScheduleController extends Controller
             return "A";
         else    
             return "E";
+    }
+    
+    /**
+     * This function takes in arrays of days (weekdays or sundays) and counts. It randomly looks for days that 
+     * do not yet have a lot of assigned technicians based on $counts and returns the selected day as an integer.
+     * 
+     * It refers to $days to see if the day is already occupied
+     */
+    private function dayBalancer($sunweek, $counts, $days) {
+
     }
 
     /**
