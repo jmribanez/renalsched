@@ -148,18 +148,24 @@ class ScheduleController extends Controller
                 }
             }
 
-            // Assign Sundays
+            // Assign Sundays per Constraint 8.
+            // All technicians must have one extended shift on a Sunday. This only needs to run once.
+            $sundayShiftDay = $this->dayBalancer($sundays, $sundaysCount, $days, true);
+            $days[$sundayShiftDay] = "H";
+            $sundaysCount[$sundayShiftDay]++;
 
             // Assign weekdays
+            foreach($weekdays as $wd) {
+                $weekdayShiftDay = $this->dayBalancer($weekdays, $weekdaysCount, $days, false);
+                $days[$weekdayShiftDay] = $this->shifter();
+                $weekdaysCount[$weekdayShiftDay]++;
+            }
 
-            // Progressively assign random shifts if $days[index] is empty
+            // Save the entries to the database
             for($j=1; $j<=$calendarDays; $j++) {
-                if(empty($days[$j])) {
-                    $days[$j] = $this->shifter();
-                }
                 $sched = new Schedule();
                 $sched->schedule = $year."-".$month."-".$j;
-                $sched->technician_id = $t->id;
+                $sched->technician_id = $days[0];
                 $sched->shift = $days[$j];
                 $sched->save();
             }
@@ -184,10 +190,41 @@ class ScheduleController extends Controller
      * This function takes in arrays of days (weekdays or sundays) and counts. It randomly looks for days that 
      * do not yet have a lot of assigned technicians based on $counts and returns the selected day as an integer.
      * 
-     * It refers to $days to see if the day is already occupied
+     * It refers to $days to see if the day is already occupied.
+     * $sunweek and $counts have the same size
      */
-    private function dayBalancer($sunweek, $counts, $days) {
-
+    private function dayBalancer($sunweek, $counts, $days, $isSunday) {
+        // Do Get the smallest value in the $counts array.
+        //      Remember the indices of those with the smallest values based from the $sunweek variable and store in an array.
+        //      Set selectedDay to 0
+        //      Do Randomly choose from the array of smallest values
+        //          If the value of the chosen index is available on $days, set SelectedDay to nonzero
+        //          While selectedDay is 0
+        //      smallest value++
+        //      While selectedDay is 0
+        $selectedDay = 0;
+        $smallestValue = 100;
+        $smallestValueArray = array();
+        do {
+            for($i=0; $i<sizeof($sunweek); $i++) {
+                if($counts[$i] < $smallestValue) {
+                    $smallestValue = $counts[$i];
+                    $smallestValueArray = array();
+                } else if($counts[$i] == $smallestValue) {
+                    array_push($smallestValueArray,$sunweek[$i]);
+                }
+            }
+            do {
+                die(print_r($smallestValueArray));
+                $randomIndex = rand(0,sizeof($smallestValueArray)-1);
+                if(empty($days[$smallestValueArray[$randomIndex]] || $isSunday)) {
+                    $selectedDay = $sunweek[$randomIndex];
+                    return $selectedDay;
+                }
+                unset($smallestValueArray[$randomIndex]);
+            } while($selectedDay == 0);
+            $smallestValue++;
+        } while($selectedDay == 0);
     }
 
     /**
