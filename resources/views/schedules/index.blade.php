@@ -83,9 +83,16 @@
                     </tr>
                     <tr>
                         <td></td>
-                        <td>Off</td>
+                        <td>Extended</td>
                         @for($i=1;$i<=$calendarDays;$i++)
                         <td>{{$staffPerShift[4][$i]}}</td>
+                        @endfor
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>Off</td>
+                        @for($i=1;$i<=$calendarDays;$i++)
+                        <td>{{$staffPerShift[5][$i]}}</td>
                         @endfor
                     </tr>
                     <tr>
@@ -100,6 +107,9 @@
                 @endif
             </tbody>
         </table>
+        <?php if(session('debugMessages')):?>
+        <h3>Debug Messages</h3>
+        <p>{{session('debugMessages')}}</p>
+        <?php endif;?>
     </div>
-    
 @endsection
