@@ -165,7 +165,7 @@ class ScheduleController extends Controller
 
             // Assign Sundays per Constraint 8.
             // All technicians must have one extended shift on a Sunday. This only needs to run once.
-            $sundayShiftDay = $this->dayBalancer($sundays, $sundaysCount, $days, true, false);
+            $sundayShiftDay = $this->dayBalancer($sundays, $sundaysCount, $days, "H", false);
             $days[$sundayShiftDay] = "H";
             $debugMessages .= "Assigning ". $sundayShiftDay . " as a Sunday shift. ";
             $sundaysCount[array_search($sundayShiftDay,$sundays)]++;
@@ -173,10 +173,17 @@ class ScheduleController extends Controller
             // Assign off-days
             $daysOffToAssign = 9 - sizeof($sundays);
             for($i=0; $i<$daysOffToAssign; $i++) {
-                $dayOffDay = $this->dayBalancer($weekdays, $dayOffCount, $days, false, true);
+                $dayOffDay = $this->dayBalancer($weekdays, $dayOffCount, $days, "O", true);
                 $days[$dayOffDay] = "O";
                 $debugMessages .= "Assigning ". $dayOffDay . " as a day off. ";
                 $dayOffCount[array_search($dayOffDay,$weekdays)]++;
+            }
+
+            // Assign evenings
+            for($i=0; $i<($calendarDays-9)/3; $i++) {
+                $eveningDay = $this->dayBalancer($weekdays, $eveningCount, $days, "E", true);
+                $days[$eveningDay] = "E";
+                $eveningCount[array_search($eveningDay, $weekdays)]++;
             }
 
             // Assign weekdays
@@ -226,7 +233,7 @@ class ScheduleController extends Controller
      * It refers to $days to see if the day is already occupied.
      * $sunweek and $counts have the same size
      */
-    private function dayBalancer($sunweek, $counts, $days, $targetShift, $avoidTwoConsecutive) {
+    private function dayBalancer($sunweek, $counts, $days, $targetShift, $avoidThreeConsecutive) {
         global $debugMessages;
         // Do Get the smallest value in the $counts array.
         //      Remember the indices of those with the smallest values based from the $sunweek variable and store in an array.
@@ -258,31 +265,12 @@ class ScheduleController extends Controller
             return $selectedDay;
         } else {
             // On Weekdays, need to check if days[index] is occupied.
-            do {
-                $validPlacement = true;
-                // dd($days[$smallestValueArray[$randomIndex]]);
-                // dd(print_r($days));
-                $svAValue = $smallestValueArray[$randomIndex];
-                // dd(($days[$svAValue]));
-                if(empty($days[$svAValue])) {
-                    $validPlacement = true;
-                    // dd($days[$smallestValueArray[$randomIndex]]);
-                    if($avoidTwoConsecutive && (($days[$smallestValueArray[$randomIndex]]>1) || ($days[$smallestValueArray[$randomIndex]]<sizeof($days)))) {
-                        // If not edge of calendar like 1 or 30/31, check for sandwich
-                        if(($days[$smallestValueArray[$randomIndex]-1 == $targetShift]) && ($days[$smallestValueArray[$randomIndex]+1 == $targetShift]))
-                            $validPlacement = false;
-                    }                  
-                }
-                if($validPlacement) {
-                    $selectedDay = $smallestValueArray[$randomIndex];
-                    return $selectedDay;
-                }
-                // If initial placement successful, then this part will not run anymore.
-                // Remove invalidIndex from array of choices.
-                $debugMessages .= "Index is occupied. Removing " . $smallestValueArray[$randomIndex] . ". ";
-                unset($smallestValueArray[$randomIndex]);
-            } while(sizeof($smallestValueArray)>0);
-            $debugMessages .= "WARNING: SMALLEST VALUES EXHAUSTED. ";
+            $dayAvailable = empty($days[$smallestValueArray[$randomIndex]]);
+            while(!$dayAvailable) {
+                $randomIndex = rand(0,sizeof($smallestValueArray)-1);
+                $dayAvailable = empty($days[$smallestValueArray[$randomIndex]]);
+            }
+            
             $selectedDay = $smallestValueArray[$randomIndex];
             return $selectedDay;
         }
