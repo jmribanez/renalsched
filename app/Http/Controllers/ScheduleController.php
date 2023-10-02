@@ -167,24 +167,49 @@ class ScheduleController extends Controller
             // All technicians must have one extended shift on a Sunday. This only needs to run once.
             $sundayShiftDay = $this->dayBalancer($sundays, $sundaysCount, $days, "H", false);
             $days[$sundayShiftDay] = "H";
-            $debugMessages .= "Assigning ". $sundayShiftDay . " as a Sunday shift. ";
+            // $debugMessages .= "Assigning ". $sundayShiftDay . " as a Sunday shift. ";
             $sundaysCount[array_search($sundayShiftDay,$sundays)]++;
+
+            $availableWeekdays = $weekdays;
 
             // Assign off-days
             $daysOffToAssign = 9 - sizeof($sundays);
             for($i=0; $i<$daysOffToAssign; $i++) {
                 $dayOffDay = $this->dayBalancer($weekdays, $dayOffCount, $days, "O", true);
                 $days[$dayOffDay] = "O";
-                $debugMessages .= "Assigning ". $dayOffDay . " as a day off. ";
+                // $debugMessages .= "Assigning ". $dayOffDay . " as a day off. ";
                 $dayOffCount[array_search($dayOffDay,$weekdays)]++;
+                array_splice($availableWeekdays,array_search($dayOffDay,$availableWeekdays),1);
+            }
+
+            $debugMessages .= "Array of Available Weekdays: " . print_r($availableWeekdays, true);
+
+            // Assign based on available weekdays
+            foreach($availableWeekdays as $awk => $awv ) {
+                switch($awk%3) {
+                    case 0:
+                        if($t->isSenior) {
+                            $days[$awv] = "D";
+                        } else {
+                            $days[$awv] = "M";
+                        }
+                        break;
+                    case 1:
+                        $days[$awv] = "E";
+                        break;
+                    case 2:
+                        $days[$awv] = "A";
+                }
             }
 
             // Assign evenings
-            for($i=0; $i<($calendarDays-9)/3; $i++) {
-                $eveningDay = $this->dayBalancer($weekdays, $eveningCount, $days, "E", true);
-                $days[$eveningDay] = "E";
-                $eveningCount[array_search($eveningDay, $weekdays)]++;
-            }
+            // for($i=0; $i<($calendarDays-9)/3; $i++) {
+            //     $eveningDay = $this->dayBalancer($weekdays, $eveningCount, $days, "E", true);
+            //     $days[$eveningDay] = "E";
+            //     $eveningCount[array_search($eveningDay, $weekdays)]++;
+            // }
+
+            // $debugMessages .= "Array of Evenings: " . print_r($eveningCount, true);
 
             // Assign weekdays
             // foreach($weekdays as $wd) {
@@ -193,12 +218,11 @@ class ScheduleController extends Controller
             //     $weekdaysCount[$weekdayShiftDay]++;
             // }
             // Temporary code
-            for($j=1; $j<=$calendarDays; $j++) {
-                if(empty($days[$j])) {
-                    // $days[$j] = $this->shifter();
-                    $days[$j] = "A";
-                }
-            }
+            // for($j=1; $j<=$calendarDays; $j++) {
+            //     if(empty($days[$j])) {
+            //         $days[$j] = $this->shifter($t->isSenior);
+            //     }
+            // }
 
             // Save the entries to the database
             for($j=1; $j<=$calendarDays; $j++) {
@@ -214,13 +238,13 @@ class ScheduleController extends Controller
             ->with('success','Schedule Generated.');
     }
 
-    private function shifter() {
-        $rn = rand(1,4);
-        if($rn==1)
+    private function shifter($isSenior = false) {
+        $rn = rand(1,3);
+        if($rn==1 && $isSenior) {
             return "D";
-        else if($rn==2)
+        } else if($rn==1 && !$isSenior)
             return "M";
-        else if($rn==3)
+        else if($rn==2)
             return "A";
         else    
             return "E";
@@ -246,34 +270,39 @@ class ScheduleController extends Controller
         
         $selectedDay = 0;
         $smallestValue = 100;
-        $smallestValueArray = array();
-        for($i=0; $i<sizeof($sunweek); $i++) {
-            if($counts[$i] < $smallestValue) {
-                $smallestValue = $counts[$i];
-                $smallestValueArray = array();
-                array_push($smallestValueArray,$sunweek[$i]);
-            } else if($counts[$i] == $smallestValue) {
-                array_push($smallestValueArray,$sunweek[$i]);
+        do {
+            $smallestValueArray = array();
+            for($i=0; $i<sizeof($sunweek); $i++) {
+                if($counts[$i] < $smallestValue) {
+                    $smallestValue = $counts[$i];
+                    $smallestValueArray = array();
+                    array_push($smallestValueArray,$sunweek[$i]);
+                } else if($counts[$i] == $smallestValue) {
+                    array_push($smallestValueArray,$sunweek[$i]);
+                }
             }
-        }
-        // $debugMessages .= "Smallest value array contains " . print_r($smallestValueArray, true) . ". ";
-        // $debugMessages .= "Counts array contains " . print_r($counts, true) . ". ";
-        $randomIndex = rand(0,sizeof($smallestValueArray)-1);
-        if($targetShift == "H") {
-            // On Sundays, no need to check if days[index] is occupied.
-            $selectedDay = $smallestValueArray[$randomIndex];
-            return $selectedDay;
-        } else {
-            // On Weekdays, need to check if days[index] is occupied.
-            $dayAvailable = empty($days[$smallestValueArray[$randomIndex]]);
-            while(!$dayAvailable) {
-                $randomIndex = rand(0,sizeof($smallestValueArray)-1);
-                $dayAvailable = empty($days[$smallestValueArray[$randomIndex]]);
+            // $debugMessages .= "Smallest value array contains " . print_r($smallestValueArray, true) . ". ";
+            // $debugMessages .= "Counts array contains " . print_r($counts, true) . ". ";
+            $randomIndex = rand(0,sizeof($smallestValueArray)-1);
+            if($targetShift == "H" || $targetShift == "O") {
+                // On Sundays, no need to check if days[index] is occupied.
+                $selectedDay = $smallestValueArray[$randomIndex];
+                return $selectedDay;
+            } else {
+                // On Weekdays, need to check if days[index] is occupied.
+                do {
+                    $randomIndex = rand(0,sizeof($smallestValueArray)-1);
+                    // dd(print_r($smallestValueArray, true));
+                    // dd(empty($days[$smallestValueArray[$randomIndex]]));
+                    if(empty($days[$smallestValueArray[$randomIndex]])) {
+                        $selectedDay = $smallestValueArray[$randomIndex];
+                        return $selectedDay;
+                    }
+                    unset($smallestValueArray[$randomIndex]);
+                } while(sizeof($smallestValueArray) > 0);
             }
-            
-            $selectedDay = $smallestValueArray[$randomIndex];
-            return $selectedDay;
-        }
+            $smallestValue++;
+        } while($selectedDay == 0);
         // do {
             
 

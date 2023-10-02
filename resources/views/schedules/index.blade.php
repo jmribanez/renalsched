@@ -23,6 +23,7 @@
                     @for($i=1;$i<=$calendarDays;$i++)
                     <th>{{$i}}</th>
                     @endfor
+                    <th colspan="5">Tally</th>
                 </tr>
                 <tr>
                     <td></td>
@@ -31,9 +32,15 @@
                     @for($i=0;$i<$calendarDays-1;$i++)
                     <td>{{substr(date_format((date_add($generatedMonth, date_interval_create_from_date_string("1 days"))),"D"),0,2)}}</td>
                     @endfor
+                    <td>D/M</td>
+                    <td>A</td>
+                    <td>E</td>
+                    <td>H</td>
+                    <td>O</td>
                 </tr>
             </thead>
             <tbody>
+                <?php $pertechDM = $pertechA = $pertechE = $pertechH = $pertechO = 0; ?>
                 @if(count($scheduleMonth)<1)
                     <tr><td colspan="{{$calendarDays+2}}"><p class="pt-3">There are no schedules generated for this month.</p>
                     <p>Create a schedule by selecting options in the homepage of this site and clicking Generate.</p></td></tr>
@@ -45,9 +52,35 @@
                                 <td>{{$sm->technician_id}}</td>
                                 <td>{{($sm->isSenior=='1')?'Senior':'Ordinary';}}</td>
                         @endif
-                        <td>{{$sm->shift}}</td>
+                        <td>{{$sm->shift}}
+                        <?php 
+                            switch($sm->shift) {
+                                case 'D':
+                                case 'M':
+                                    $pertechDM++;
+                                    break;
+                                case 'A':
+                                    $pertechA++;
+                                    break;
+                                case 'E':
+                                    $pertechE++;
+                                    break;
+                                case 'H':
+                                    $pertechH++;
+                                    break;
+                                case 'O':
+                                    $pertechO++;
+                                    break;
+                            }    
+                        ?></td>
                         @if($smdate==$calendarDays)
-                            </tr>
+                        <td>{{$pertechDM}}</td>    
+                        <td>{{$pertechA}}</td>
+                        <td>{{$pertechE}}</td>
+                        <td>{{$pertechH}}</td>
+                        <td>{{$pertechO}}</td>
+                        </tr>
+                        <?php $pertechDM = $pertechA = $pertechE = $pertechH = $pertechO = 0; ?>
                         @endif
                     @endforeach
                     <tr>
