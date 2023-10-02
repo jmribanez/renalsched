@@ -84,7 +84,7 @@
                         @endif
                     @endforeach
                     <tr>
-                        <td colspan="{{(2+$calendarDays)}}"><strong>Total Staff Per Shift</strong></td>
+                        <td colspan="{{(7+$calendarDays)}}"><strong>Total Staff Per Shift</strong></td>
                     </tr>
                     <tr>
                         <td></td>
@@ -92,6 +92,7 @@
                         @for($i=1;$i<=$calendarDays;$i++)
                         <td>{{$staffPerShift[0][$i]}}</td>
                         @endfor
+                        <td colspan="5"></td>
                     </tr>
                     <tr>
                         <td></td>
@@ -99,6 +100,7 @@
                         @for($i=1;$i<=$calendarDays;$i++)
                         <td>{{$staffPerShift[1][$i]}}</td>
                         @endfor
+                        <td colspan="5"></td>
                     </tr>
                     <tr>
                         <td></td>
@@ -106,6 +108,7 @@
                         @for($i=1;$i<=$calendarDays;$i++)
                         <td>{{$staffPerShift[2][$i]}}</td>
                         @endfor
+                        <td colspan="5"></td>
                     </tr>
                     <tr>
                         <td></td>
@@ -113,6 +116,7 @@
                         @for($i=1;$i<=$calendarDays;$i++)
                         <td>{{$staffPerShift[3][$i]}}</td>
                         @endfor
+                        <td colspan="5"></td>
                     </tr>
                     <tr>
                         <td></td>
@@ -120,6 +124,7 @@
                         @for($i=1;$i<=$calendarDays;$i++)
                         <td>{{$staffPerShift[4][$i]}}</td>
                         @endfor
+                        <td colspan="5"></td>
                     </tr>
                     <tr>
                         <td></td>
@@ -127,15 +132,17 @@
                         @for($i=1;$i<=$calendarDays;$i++)
                         <td>{{$staffPerShift[5][$i]}}</td>
                         @endfor
+                        <td colspan="5"></td>
                     </tr>
                     <tr>
-                        <td colspan="{{(2+$calendarDays)}}"><strong>Total Staff Per Day</strong></td>
+                        <td colspan="{{(7+$calendarDays)}}"><strong>Total Staff Per Day</strong></td>
                     </tr>
                     <tr>
                         <td></td><td></td>
                         @for($i=1;$i<=$calendarDays;$i++)
                         <td>{{$staffDay[$i]}}</td>
                         @endfor
+                        <td colspan="5"></td>
                     </tr>
                 @endif
             </tbody>
