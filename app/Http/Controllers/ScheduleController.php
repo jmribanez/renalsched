@@ -124,6 +124,8 @@ class ScheduleController extends Controller
         $eveningCount = array_fill(0,sizeof($weekdays),0);
         $afternoonCount = array_fill(0,sizeof($weekdays),0);
         $morningCount = array_fill(0,sizeof($weekdays),0);
+        // Counter for all the shifts per technician for balancing
+        $mpt = $ept = $apt = 0;
 
         // For the meantime, select all technicians, get all id's
         $technicians = Technician::getTechnicians();
@@ -134,7 +136,7 @@ class ScheduleController extends Controller
         $initialSolution = array();
         foreach($technicians as $t) {
             // the $days variable will now be the array fed to the $initialSolution array
-            $days = array_fill(0, $calendarDays,"");
+            $days = array_fill(0, $calendarDays+1,"");
             // $days[0] will be the technician id
             $days[0] = $t->id;
             $debugMessages .= "Doing technician " . $t->id . " (". (($t->isSenior)?'Senior':'Ordinary') ."). ";
@@ -183,24 +185,39 @@ class ScheduleController extends Controller
                 array_splice($availableWeekdays,array_search($dayOffDay,$availableWeekdays),1);
             }
 
-            $debugMessages .= "Array of Available Weekdays: " . print_r($availableWeekdays, true);
-            
 
             // Assign based on available weekdays
-            foreach($availableWeekdays as $awk => $awv ) {
-                switch($awk%3) {
-                    case 0:
-                        if($t->isSenior) {
-                            $days[$awv] = "D";
-                        } else {
-                            $days[$awv] = "M";
-                        }
-                        break;
-                    case 1:
-                        $days[$awv] = "E";
-                        break;
-                    case 2:
-                        $days[$awv] = "A";
+            foreach($weekdays as $wki => $wkv ) {
+                // switch($awk%3) {
+                //     case 0:
+                //         if($t->isSenior) {
+                //             $days[$awv] = "D";
+                //         } else {
+                //             $days[$awv] = "M";
+                //         }
+                //         break;
+                //     case 1:
+                //         $days[$awv] = "E";
+                //         break;
+                //     case 2:
+                //         $days[$awv] = "A";
+                // }
+                if($days[$wkv]=="O") {
+                    continue;
+                } else {
+                    $candidateShift = $this->getCandidate($mpt, $ept, $apt);
+                    $finalShift = $this->getFinal($morningCount, $eveningCount, $afternoonCount, $wki, $candidateShift);
+                    $days[$wkv] = ($t->isSenior&&$finalShift=="M")?"D":$finalShift;
+                    if($finalShift == "M") {
+                        $morningCount[$wki]++;
+                        $mpt++;
+                    } else if($finalShift == "E") {
+                        $eveningCount[$wki]++;
+                        $ept++;
+                    } else {
+                        $afternoonCount[$wki]++;
+                        $apt++;
+                    }
                 }
             }
             /**
@@ -244,6 +261,34 @@ class ScheduleController extends Controller
         return redirect('schedules/'.$year."/".$month)
             ->with('debugMessages', $debugMessages)
             ->with('success','Schedule Generated.');
+    }
+
+    private function getCandidate($mpt, $ept, $apt) {
+        $a = min($mpt, $ept, $apt);
+        if($mpt == $a) {
+            return "M";
+        } else if($ept == $a) {
+            return "E";
+        } else {
+            return "A";
+        }
+    }
+
+    private function getFinal($morningCount, $eveningCount, $afternoonCount, $i, $candidate) {
+        $a = min($morningCount[$i], $eveningCount[$i], $afternoonCount[$i]);
+        if($a == $morningCount[$i] && $candidate == "M")
+            return "M";
+        if($a == $eveningCount[$i] && $candidate == "E")
+            return "E";
+        if($a == $afternoonCount[$i] && $candidate == "A")
+            return "A";
+
+        if($a == $morningCount[$i])
+            return "M";
+        if($a == $eveningCount[$i])
+            return "E";
+        if($a == $afternoonCount[$i])
+            return "A";
     }
 
     private function shifter($isSenior = false) {

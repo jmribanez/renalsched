@@ -26,6 +26,6 @@ class Technician extends Model
     }
 
     public static function getTechnicians() {
-        return self::orderBy('isSenior')->get();
+        return self::orderBy('isSenior',"DESC")->get();
     }
 }
