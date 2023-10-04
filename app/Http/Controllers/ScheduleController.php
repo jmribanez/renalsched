@@ -48,7 +48,8 @@ class ScheduleController extends Controller
                     break;
                 case 'H':
                     $extShift[$index]++;
-                default:
+                    break;
+                default :
                     $offShift[$index]++;
                     break;
             }
@@ -117,7 +118,7 @@ class ScheduleController extends Controller
 
         
 
-        // Create the days counter
+        // Create the days counter for balancing
         $sundaysCount = array_fill(0,sizeof($sundays),0);
         $dayOffCount = array_fill(0,sizeof($weekdays),0);
         $eveningCount = array_fill(0,sizeof($weekdays),0);
@@ -183,6 +184,7 @@ class ScheduleController extends Controller
             }
 
             $debugMessages .= "Array of Available Weekdays: " . print_r($availableWeekdays, true);
+            
 
             // Assign based on available weekdays
             foreach($availableWeekdays as $awk => $awv ) {
@@ -201,7 +203,13 @@ class ScheduleController extends Controller
                         $days[$awv] = "A";
                 }
             }
-
+            /**
+             * Foreach available weekday,
+             * find smallest in dmcount, afternoon, and evening counts
+             * if in morning, increment morning array
+             * if in afternoon, increment afternoon
+             * in in evening, increment evening
+             */
             // Assign evenings
             // for($i=0; $i<($calendarDays-9)/3; $i++) {
             //     $eveningDay = $this->dayBalancer($weekdays, $eveningCount, $days, "E", true);
