@@ -174,6 +174,7 @@ class ScheduleController extends Controller
             $sundaysCount[array_search($sundayShiftDay,$sundays)]++;
 
             $availableWeekdays = $weekdays;
+            $prevShift = "";
 
             // Assign off-days
             $daysOffToAssign = 9 - sizeof($sundays);
@@ -206,17 +207,20 @@ class ScheduleController extends Controller
                     continue;
                 } else {
                     $candidateShift = $this->getCandidate($mpt, $ept, $apt);
-                    $finalShift = $this->getFinal($morningCount, $eveningCount, $afternoonCount, $wki, $candidateShift);
+                    $finalShift = $this->getFinal($morningCount, $eveningCount, $afternoonCount, $wki, $candidateShift, $prevShift);
                     $days[$wkv] = ($t->isSenior&&$finalShift=="M")?"D":$finalShift;
                     if($finalShift == "M") {
                         $morningCount[$wki]++;
                         $mpt++;
+                        $prevShift = "M";
                     } else if($finalShift == "E") {
                         $eveningCount[$wki]++;
                         $ept++;
+                        $prevShift = "E";
                     } else {
                         $afternoonCount[$wki]++;
                         $apt++;
+                        $prevShift = "A";
                     }
                 }
             }
@@ -265,24 +269,36 @@ class ScheduleController extends Controller
 
     private function getCandidate($mpt, $ept, $apt) {
         $a = min($mpt, $ept, $apt);
-        if($mpt == $a) {
-            return "M";
-        } else if($ept == $a) {
-            return "E";
-        } else {
-            return "A";
+        $candidate = array();
+        while(sizeof($candidate)<3) {
+            if($mpt == $a) {
+                array_push($candidate,"M");
+            }
+            if($ept == $a) {
+                array_push($candidate,"E");
+            }
+            if($apt == $a) {
+                array_push($candidate,"A");
+            }
+            $a++;
         }
+        return $candidate;
     }
 
-    private function getFinal($morningCount, $eveningCount, $afternoonCount, $i, $candidate) {
+    private function getFinal($morningCount, $eveningCount, $afternoonCount, $i, $candidate, $prevShift) {
         $a = min($morningCount[$i], $eveningCount[$i], $afternoonCount[$i]);
-        if($a == $morningCount[$i] && $candidate == "M")
+        if($a == $morningCount[$i] && $candidate[0] == "M"){
+            if($prevShift == "E") {
+                return $candidate[1];
+            }
             return "M";
-        if($a == $eveningCount[$i] && $candidate == "E")
+        }
+        if($a == $eveningCount[$i] && $candidate[0] == "E"){
             return "E";
-        if($a == $afternoonCount[$i] && $candidate == "A")
+        }
+        if($a == $afternoonCount[$i] && $candidate[0] == "A"){
             return "A";
-
+        }
         if($a == $morningCount[$i])
             return "M";
         if($a == $eveningCount[$i])
