@@ -94,6 +94,7 @@ class ScheduleController extends Controller
     static $debugMessages = "";
     public function generate(Request $request)
     {
+        $timeStart = microtime(true);
         // debug Messages for debugging
         global $debugMessages;
 
@@ -102,6 +103,16 @@ class ScheduleController extends Controller
 
         $month = $request->month;
         $year = $request->year;
+
+        // Firefly-specific variables
+        $populationSize = 1;
+        $alpha = 1;
+        $gamma = 1;
+        $initialSolution = array();
+
+        /**
+         * Initial Solution is an array whose size is equivalent to the populationSize
+         */
 
         // Identify all calendar days
         $calendarDays = cal_days_in_month(CAL_GREGORIAN,$month,$year);
@@ -116,158 +127,114 @@ class ScheduleController extends Controller
                 array_push($weekdays,$i);
         }
 
-        
+        for($p=0; $p<$populationSize; $p++) {
+            $solution = array();
+            // Create the days counter for balancing
+            $sundaysCount = array_fill(0,sizeof($sundays),0);
+            $dayOffCount = array_fill(0,sizeof($weekdays),0);
+            $eveningCount = array_fill(0,sizeof($weekdays),0);
+            $afternoonCount = array_fill(0,sizeof($weekdays),0);
+            $morningCount = array_fill(0,sizeof($weekdays),0);
+            $dawnCount = array_fill(0,sizeof($weekdays),0);
+            // Counter for all the shifts per technician for balancing
+            $mpt = $ept = $apt = 0;
 
-        // Create the days counter for balancing
-        $sundaysCount = array_fill(0,sizeof($sundays),0);
-        $dayOffCount = array_fill(0,sizeof($weekdays),0);
-        $eveningCount = array_fill(0,sizeof($weekdays),0);
-        $afternoonCount = array_fill(0,sizeof($weekdays),0);
-        $morningCount = array_fill(0,sizeof($weekdays),0);
-        $dawnCount = array_fill(0,sizeof($weekdays),0);
-        // Counter for all the shifts per technician for balancing
-        $mpt = $ept = $apt = 0;
+            // For the meantime, select all technicians, get all id's
+            $technicians = Technician::getTechnicians();
+            
+            foreach($technicians as $t) {
+                // the $days variable will now be the array fed to the $initialSolution array
+                $days = array_fill(0, $calendarDays+1,"");
+                // $days[0] will be the technician id
+                $days[0] = $t->id;
+                $debugMessages .= "Doing technician " . $t->id . " (". (($t->isSenior)?'Senior':'Ordinary') ."). ";
 
-        // For the meantime, select all technicians, get all id's
-        $technicians = Technician::getTechnicians();
+                // By default, assign all Sundays to "O"
+                foreach($sundays as $sun) {
+                    $days[$sun] = "O";
+                }
 
-        // Start of initial solution
-        // initialSolution is an array of arrays each representing a technician and their shifts for the calendarMonth
-        // values of the arrays are their shifts for the day.
-        $initialSolution = array();
-        foreach($technicians as $t) {
-            // the $days variable will now be the array fed to the $initialSolution array
-            $days = array_fill(0, $calendarDays+1,"");
-            // $days[0] will be the technician id
-            $days[0] = $t->id;
-            $debugMessages .= "Doing technician " . $t->id . " (". (($t->isSenior)?'Senior':'Ordinary') ."). ";
+                // Assign Sundays per Constraint 8.
+                // All technicians must have one extended shift on a Sunday. This only needs to run once.
+                $sundayShiftDay = $this->dayBalancer($sundays, $sundaysCount, $days, "H", false);
+                $days[$sundayShiftDay] = "H";
+                // $debugMessages .= "Assigning ". $sundayShiftDay . " as a Sunday shift. ";
+                $sundaysCount[array_search($sundayShiftDay,$sundays)]++;
 
-            /**
-             * TODO: Foreach sunday, randomly assign one technician
-             *       Note who got assigned so they only need to work one Sunday.
-             * 
-             *       store all technician shift data to initialSolution
-             *       Then bestSolution is initialSolution for now
-             *       Modify code to store bestSolution in database    
-             */
+                $availableWeekdays = $weekdays;
+                $prevShift = "";
 
-            // By default, assign all Sundays to "O"
-            foreach($sundays as $sun) {
-                $days[$sun] = "O";
-            }
-
-            // Randomly assign 8 off days
-            // Update: no longer the case. Off days will be distributed and balanced.
-            // $offcount = sizeof($sundays);
-            // while($offcount < 8){
-            //     $randomDay = rand(1,$calendarDays);
-            //     if(empty($days[$randomDay])) {
-            //         $days[$randomDay] = "O";
-            //         $offcount++;
-            //     }
-            // }
-
-            // Assign Sundays per Constraint 8.
-            // All technicians must have one extended shift on a Sunday. This only needs to run once.
-            $sundayShiftDay = $this->dayBalancer($sundays, $sundaysCount, $days, "H", false);
-            $days[$sundayShiftDay] = "H";
-            // $debugMessages .= "Assigning ". $sundayShiftDay . " as a Sunday shift. ";
-            $sundaysCount[array_search($sundayShiftDay,$sundays)]++;
-
-            $availableWeekdays = $weekdays;
-            $prevShift = "";
-
-            // Assign off-days
-            $daysOffToAssign = 9 - sizeof($sundays);
-            for($i=0; $i<$daysOffToAssign; $i++) {
-                $dayOffDay = $this->dayBalancer($weekdays, $dayOffCount, $days, "O", true);
-                $days[$dayOffDay] = "O";
-                // $debugMessages .= "Assigning ". $dayOffDay . " as a day off. ";
-                $dayOffCount[array_search($dayOffDay,$weekdays)]++;
-                array_splice($availableWeekdays,array_search($dayOffDay,$availableWeekdays),1);
-            }
+                // Assign off-days
+                $daysOffToAssign = 9 - sizeof($sundays);
+                for($i=0; $i<$daysOffToAssign; $i++) {
+                    $dayOffDay = $this->dayBalancer($weekdays, $dayOffCount, $days, "O", true);
+                    $days[$dayOffDay] = "O";
+                    // $debugMessages .= "Assigning ". $dayOffDay . " as a day off. ";
+                    $dayOffCount[array_search($dayOffDay,$weekdays)]++;
+                    array_splice($availableWeekdays,array_search($dayOffDay,$availableWeekdays),1);
+                }
 
 
-            // Assign based on available weekdays
-            foreach($weekdays as $wki => $wkv ) {
-                // switch($awk%3) {
-                //     case 0:
-                //         if($t->isSenior) {
-                //             $days[$awv] = "D";
-                //         } else {
-                //             $days[$awv] = "M";
-                //         }
-                //         break;
-                //     case 1:
-                //         $days[$awv] = "E";
-                //         break;
-                //     case 2:
-                //         $days[$awv] = "A";
-                // }
-                if($days[$wkv]=="O") {
-                    continue;
-                } else {
-                    $candidateShift = $this->getCandidate($mpt, $ept, $apt);
-                    $finalShift = $this->getFinal($dawnCount, $morningCount, $eveningCount, $afternoonCount, $wki, $candidateShift, $prevShift, $t);
-                    $days[$wkv] = ($t->isSenior&&$finalShift=="M")?"D":$finalShift;
-                    if($finalShift == "D") {
-                        $dawnCount[$wki]++;
-                        $mpt++;
-                        $prevShift = "D";
-                    }
-                    if($finalShift == "M") {
-                        $morningCount[$wki]++;
-                        $mpt++;
-                        $prevShift = "M";
-                    } else if($finalShift == "E") {
-                        $eveningCount[$wki]++;
-                        $ept++;
-                        $prevShift = "E";
+                // Assign based on available weekdays
+                foreach($weekdays as $wki => $wkv ) {
+                    if($days[$wkv]=="O") {
+                        continue;
                     } else {
-                        $afternoonCount[$wki]++;
-                        $apt++;
-                        $prevShift = "A";
+                        $candidateShift = $this->getCandidate($mpt, $ept, $apt);
+                        $finalShift = $this->getFinal($dawnCount, $morningCount, $eveningCount, $afternoonCount, $wki, $candidateShift, $prevShift, $t);
+                        $days[$wkv] = ($t->isSenior&&$finalShift=="M")?"D":$finalShift;
+                        if($finalShift == "D") {
+                            $dawnCount[$wki]++;
+                            $mpt++;
+                            $prevShift = "D";
+                        }
+                        if($finalShift == "M") {
+                            $morningCount[$wki]++;
+                            $mpt++;
+                            $prevShift = "M";
+                        } else if($finalShift == "E") {
+                            $eveningCount[$wki]++;
+                            $ept++;
+                            $prevShift = "E";
+                        } else {
+                            $afternoonCount[$wki]++;
+                            $apt++;
+                            $prevShift = "A";
+                        }
                     }
                 }
+
+                // Rather than saving the entries to the database right away,
+                // we will create a "solution" array to contain the entries.
+                for($j=1; $j<=$calendarDays; $j++) {
+                    array_push($solution, [$year."-".$month."-".$j, $days[0], $days[$j]]);
+                }
+
+                // Save the entries to the database
+                // for($j=1; $j<=$calendarDays; $j++) {
+                //     $sched = new Schedule();
+                //     $sched->schedule = $year."-".$month."-".$j;
+                //     $sched->technician_id = $days[0];
+                //     $sched->shift = $days[$j];
+                //     $sched->save();
+                // }
             }
-            /**
-             * Foreach available weekday,
-             * find smallest in dmcount, afternoon, and evening counts
-             * if in morning, increment morning array
-             * if in afternoon, increment afternoon
-             * in in evening, increment evening
-             */
-            // Assign evenings
-            // for($i=0; $i<($calendarDays-9)/3; $i++) {
-            //     $eveningDay = $this->dayBalancer($weekdays, $eveningCount, $days, "E", true);
-            //     $days[$eveningDay] = "E";
-            //     $eveningCount[array_search($eveningDay, $weekdays)]++;
-            // }
-
-            // $debugMessages .= "Array of Evenings: " . print_r($eveningCount, true);
-
-            // Assign weekdays
-            // foreach($weekdays as $wd) {
-            //     $weekdayShiftDay = $this->dayBalancer($weekdays, $weekdaysCount, $days, false);
-            //     $days[$weekdayShiftDay] = $this->shifter();
-            //     $weekdaysCount[$weekdayShiftDay]++;
-            // }
-            // Temporary code
-            // for($j=1; $j<=$calendarDays; $j++) {
-            //     if(empty($days[$j])) {
-            //         $days[$j] = $this->shifter($t->isSenior);
-            //     }
-            // }
-
-            // Save the entries to the database
-            for($j=1; $j<=$calendarDays; $j++) {
-                $sched = new Schedule();
-                $sched->schedule = $year."-".$month."-".$j;
-                $sched->technician_id = $days[0];
-                $sched->shift = $days[$j];
-                $sched->save();
-            }
+            array_push($initialSolution, $solution);
         }
+        
+        // Perform Firefly algorithm here
+
+        // Write only the best solution to the database
+        for($k=0; $k<sizeof($initialSolution[0]); $k++) {
+            $sched = new Schedule();
+            $sched->schedule = $initialSolution[0][$k][0];
+            $sched->technician_id = $initialSolution[0][$k][1];
+            $sched->shift = $initialSolution[0][$k][2];
+            $sched->save();
+        }
+
+        $timeEnd = microtime(true);
+        $debugMessages .= "Time elapsed: " . number_format(($timeEnd - $timeStart), 2) . ". ";
         return redirect('schedules/'.$year."/".$month)
             ->with('debugMessages', $debugMessages)
             ->with('success','Schedule Generated.');
