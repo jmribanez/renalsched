@@ -124,6 +124,7 @@ class ScheduleController extends Controller
         $eveningCount = array_fill(0,sizeof($weekdays),0);
         $afternoonCount = array_fill(0,sizeof($weekdays),0);
         $morningCount = array_fill(0,sizeof($weekdays),0);
+        $dawnCount = array_fill(0,sizeof($weekdays),0);
         // Counter for all the shifts per technician for balancing
         $mpt = $ept = $apt = 0;
 
@@ -207,8 +208,13 @@ class ScheduleController extends Controller
                     continue;
                 } else {
                     $candidateShift = $this->getCandidate($mpt, $ept, $apt);
-                    $finalShift = $this->getFinal($morningCount, $eveningCount, $afternoonCount, $wki, $candidateShift, $prevShift);
+                    $finalShift = $this->getFinal($dawnCount, $morningCount, $eveningCount, $afternoonCount, $wki, $candidateShift, $prevShift, $t);
                     $days[$wkv] = ($t->isSenior&&$finalShift=="M")?"D":$finalShift;
+                    if($finalShift == "D") {
+                        $dawnCount[$wki]++;
+                        $mpt++;
+                        $prevShift = "D";
+                    }
                     if($finalShift == "M") {
                         $morningCount[$wki]++;
                         $mpt++;
@@ -285,7 +291,7 @@ class ScheduleController extends Controller
         return $candidate;
     }
 
-    private function getFinal($morningCount, $eveningCount, $afternoonCount, $i, $candidate, $prevShift) {
+    private function getFinal($dawnCount, $morningCount, $eveningCount, $afternoonCount, $i, $candidate, $prevShift, $t) {
         $a = min($morningCount[$i], $eveningCount[$i], $afternoonCount[$i]);
         if($a == $morningCount[$i] && $candidate[0] == "M"){
             if($prevShift == "E") {
@@ -299,6 +305,8 @@ class ScheduleController extends Controller
         if($a == $afternoonCount[$i] && $candidate[0] == "A"){
             return "A";
         }
+        // if($a == $dawnCount[$i] && $t->isSenior)
+        //     return "D";
         if($a == $morningCount[$i])
             return "M";
         if($a == $eveningCount[$i])
