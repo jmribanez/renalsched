@@ -105,14 +105,14 @@ class ScheduleController extends Controller
         $year = $request->year;
 
         // Firefly-specific variables
-        $populationSize = 1;
+        $populationSize = 1;   // Run time at 1000 is 1.76 seconds only
         $alpha = 1;
         $gamma = 1;
         $initialSolution = array();
-
-        /**
-         * Initial Solution is an array whose size is equivalent to the populationSize
-         */
+        // Initial Solution is an array whose size is equivalent to the populationSize
+        $penalties = array();
+        // Penalties is an array containing the count of Off-balance shifts, consecutive
+        // shifts beyond 2, and unfilled shifts. It will be used in the objective function
 
         // Identify all calendar days
         $calendarDays = cal_days_in_month(CAL_GREGORIAN,$month,$year);
@@ -129,6 +129,7 @@ class ScheduleController extends Controller
 
         for($p=0; $p<$populationSize; $p++) {
             $solution = array();
+            $debugMessages .= "Solution " . $p+1 . ". ";
             // Create the days counter for balancing
             $sundaysCount = array_fill(0,sizeof($sundays),0);
             $dayOffCount = array_fill(0,sizeof($weekdays),0);
@@ -139,15 +140,28 @@ class ScheduleController extends Controller
             // Counter for all the shifts per technician for balancing
             $mpt = $ept = $apt = 0;
 
+            // Counter for penalties observed
+            $offbalanceshifts = 0;
+            $consecutiveshifts = 0;
+            $unfilledshifts = 0;
+
+            $lowerBound = intval(($calendarDays-9)/3);
+            $upperBound = intval(ceil(($calendarDays-9)/3));
+            $debugMessages .= "Lower bound at " . $lowerBound . ". ";
+            $debugMessages .= "Upper bound at " . $upperBound . ". ";
+
             // For the meantime, select all technicians, get all id's
             $technicians = Technician::getTechnicians();
             
             foreach($technicians as $t) {
+                // reset the counters of mpt ept apt to 0
+                $mpt = $ept = $apt = 0;
+
                 // the $days variable will now be the array fed to the $initialSolution array
                 $days = array_fill(0, $calendarDays+1,"");
                 // $days[0] will be the technician id
                 $days[0] = $t->id;
-                $debugMessages .= "Doing technician " . $t->id . " (". (($t->isSenior)?'Senior':'Ordinary') ."). ";
+                // $debugMessages .= "Doing technician " . $t->id . " (". (($t->isSenior)?'Senior':'Ordinary') ."). ";
 
                 // By default, assign all Sundays to "O"
                 foreach($sundays as $sun) {
@@ -183,12 +197,10 @@ class ScheduleController extends Controller
                         $candidateShift = $this->getCandidate($mpt, $ept, $apt);
                         $finalShift = $this->getFinal($dawnCount, $morningCount, $eveningCount, $afternoonCount, $wki, $candidateShift, $prevShift, $t);
                         $days[$wkv] = ($t->isSenior&&$finalShift=="M")?"D":$finalShift;
-                        if($finalShift == "D") {
-                            $dawnCount[$wki]++;
-                            $mpt++;
-                            $prevShift = "D";
-                        }
                         if($finalShift == "M") {
+                            if($t->isSenior) {
+                                $dawnCount[$wki]++;
+                            }
                             $morningCount[$wki]++;
                             $mpt++;
                             $prevShift = "M";
@@ -202,12 +214,38 @@ class ScheduleController extends Controller
                             $prevShift = "A";
                         }
                     }
+                // Finished assigning weekdays
                 }
 
+                // off-balance count: check mpt, ept, and apt
+                if(!($mpt >= $lowerBound && $mpt <= $upperBound)) {
+                    $offbalanceshifts += abs($mpt - ($upperBound-($upperBound-$lowerBound)));
+                }
+                if(!($ept >= $lowerBound && $ept <= $upperBound)) {
+                    $offbalanceshifts += abs($ept - ($upperBound-($upperBound-$lowerBound)));
+                }
+                if(!($apt >= $lowerBound && $apt <= $upperBound)) {
+                    $offbalanceshifts += abs($apt - ($upperBound-($upperBound-$lowerBound)));
+                }
+                // $debugMessages .= "Off Balance Shifts now at: " . $offbalanceshifts . ". ";
                 // Rather than saving the entries to the database right away,
                 // we will create a "solution" array to contain the entries.
+                // Data: date, tech_id, shift
+                // Perform consecutive count here
+                $consec_prevShift = "";
+                $consec_localCount = 1;
                 for($j=1; $j<=$calendarDays; $j++) {
                     array_push($solution, [$year."-".$month."-".$j, $days[0], $days[$j]]);
+                    if($days[$j] == $consec_prevShift) {
+                        $consec_localCount++;
+                    } else {
+                        $consec_localCount = 1;
+                    }
+                    if($consec_localCount > 2) {
+                        // $debugMessages .= "Consec local is already : " . $consec_localCount . " for ". $consec_prevShift .". ";
+                        $consecutiveshifts++;
+                    }
+                    $consec_prevShift = $days[$j];
                 }
 
                 // Save the entries to the database
@@ -218,13 +256,40 @@ class ScheduleController extends Controller
                 //     $sched->shift = $days[$j];
                 //     $sched->save();
                 // }
+            // End for loop per technician
             }
+            // unfilled shift count: check dawn,morning,afternoon,eveningCount arrays
+            //dd(print_r(array_count_values($morningCount)));
+            if(in_array(0,$dawnCount)) {
+                $unfilledshifts += array_count_values($dawnCount)[0];
+                // $debugMessages .= "Dawn has this many 0s: " . array_count_values($dawnCount)[0] . ". ";
+            }
+            if(in_array(0,$morningCount)) {
+                $unfilledshifts += array_count_values($morningCount)[0];
+                // $debugMessages .= "Morning has this many 0s: " . array_count_values($morningCount)[0] . ". ";
+            }
+            if(in_array(0,$afternoonCount)) {
+                $unfilledshifts += array_count_values($afternoonCount)[0];
+            }
+            if(in_array(0,$eveningCount)) {
+                $unfilledshifts += array_count_values($eveningCount)[0];
+            }
+            $debugMessages .= "Off-Balance count: ". $offbalanceshifts . ". Consecutive count: ". $consecutiveshifts .". Unfilled count: ". $unfilledshifts . ". ";
             array_push($initialSolution, $solution);
+            array_push($penalties, [$offbalanceshifts, $consecutiveshifts, $unfilledshifts]);
         }
         
         // Perform Firefly algorithm here
+        /**
+         *   1. For each solution in $initialSolutions, read $penalties, assign to new array the value of initialsolution at index
+         *      with objective function value
+         *   2. Sort the new array in ascending order. Higher value currently means more penalties incurred.
+         *   3. Compute distance
+         *   4. Perform movement
+         */
 
         // Write only the best solution to the database
+        // For the meantime, put first solution in.
         for($k=0; $k<sizeof($initialSolution[0]); $k++) {
             $sched = new Schedule();
             $sched->schedule = $initialSolution[0][$k][0];
@@ -281,18 +346,6 @@ class ScheduleController extends Controller
         if($a == $afternoonCount[$i])
             return "A";
     }
-
-    private function shifter($isSenior = false) {
-        $rn = rand(1,3);
-        if($rn==1 && $isSenior) {
-            return "D";
-        } else if($rn==1 && !$isSenior)
-            return "M";
-        else if($rn==2)
-            return "A";
-        else    
-            return "E";
-    }
     
     /**
      * This function takes in arrays of days (weekdays or sundays) and counts. It randomly looks for days that 
@@ -303,14 +356,6 @@ class ScheduleController extends Controller
      */
     private function dayBalancer($sunweek, $counts, $days, $targetShift, $avoidThreeConsecutive) {
         global $debugMessages;
-        // Do Get the smallest value in the $counts array.
-        //      Remember the indices of those with the smallest values based from the $sunweek variable and store in an array.
-        //      Set selectedDay to 0
-        //      Do Randomly choose from the array of smallest values
-        //          If the value of the chosen index is available on $days, set SelectedDay to nonzero
-        //          While selectedDay is 0
-        //      smallest value++
-        //      While selectedDay is 0
         
         $selectedDay = 0;
         $smallestValue = 100;
@@ -347,31 +392,19 @@ class ScheduleController extends Controller
             }
             $smallestValue++;
         } while($selectedDay == 0);
-        // do {
-            
-
-        //     // do {
-        //     //     $randomIndex = rand(0,sizeof($smallestValueArray)-1);
-        //     //     if(empty($days[$smallestValueArray[$randomIndex]]) || $isSunday) {
-        //     //         $selectedDay = $sunweek[$randomIndex];
-        //     //         return $selectedDay;
-        //     //     }
-        //     //     // $debugMessages .= "Removing " . $smallestValueArray[$randomIndex] . " from smallest value array. ";
-        //     //     // unset($smallestValueArray[$randomIndex]);
-        //     // } while($selectedDay == 0);
-        //     $smallestValue++;
-        // } while($selectedDay == 0);
     }
 
     /**
      * This function computes the "brightness" of a firefly
      */
-    private function getObjectiveFunctionValue() {
+    private function getObjectiveFunctionValue($penalties) {
         /**
-         * workingDays is an array of nTechnicians x nDays
-         * value gets compute Days Off penalization
-         * value getsadds compute Shift penalization
-         * value getsadds compute Shift Off penalization
+         * Inputs : penaties array to read:
+         *          - off-balance (too much or too little from threhsold)
+         *          - consecutive (more than 3 at a time)
+         *          - unfilled (unfilled shifts when there should be at least 1)
+         * Process: so far all multipliers at 1 for now.
+         * Outputs: integer of score
          */
     }
 
