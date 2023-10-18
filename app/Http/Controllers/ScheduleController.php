@@ -280,7 +280,8 @@ class ScheduleController extends Controller
             if(in_array(0,$eveningCount)) {
                 $unfilledshifts += array_count_values($eveningCount)[0];
             }
-            $debugMessages .= "Off-Balance count: ". $offbalanceshifts . ". Consecutive count: ". $consecutiveshifts .". Unfilled count: ". $unfilledshifts . ". ";
+            // $debugMessages .= "Off-Balance count: ". $offbalanceshifts . ". Consecutive count: ". $consecutiveshifts .". Unfilled count: ". $unfilledshifts . ". ";
+            $debugMessages .= "Objective function value: " . $offbalanceshifts + $consecutiveshifts + $unfilledshifts . ". ";
             array_push($initialSolution, $solution);
             array_push($penalties, [$offbalanceshifts, $consecutiveshifts, $unfilledshifts]);
         }
@@ -288,11 +289,23 @@ class ScheduleController extends Controller
         // Perform Firefly algorithm here
         /**
          *   1. For each solution in $initialSolutions, read $penalties, assign to new array the value of initialsolution at index
-         *      with objective function value
-         *   2. Sort the new array in ascending order. Higher value currently means more penalties incurred.
+         *      with objective function value - OK
+         *   2. Sort the new array in ascending order. Higher value currently means more penalties incurred. - OK
+         *   For i to maximum iterations, do
          *   3. Compute distance
          *   4. Perform movement
+         *   5. Get objective function values
+         *   6. Sort the solutions again.
+         *   7. Repeat
          */
+
+        $objectiveFunctionValues = array();
+        for($p=0; $p<$populationSize; $p++) {
+            array_push($objectiveFunctionValues, $this->getObjectiveFunctionValue($penalties[$p]));
+        }
+
+        array_multisort($objectiveFunctionValues, $initialSolution);
+        $debugMessages .= "Solutions sorted. Best solution has objValue of " . $objectiveFunctionValues[0] . ". ";
 
         // Write only the best solution to the database
         // For the meantime, put first solution in.
@@ -412,6 +425,10 @@ class ScheduleController extends Controller
          * Process: so far all multipliers at 1 for now.
          * Outputs: integer of score
          */
+        $offbalanceshifts = $penalties[0];
+        $consecutiveshifts = $penalties[1];
+        $unfilledshifts = $penalties[2];
+        return $offbalanceshifts + $consecutiveshifts + $unfilledshifts;
     }
 
     /**
