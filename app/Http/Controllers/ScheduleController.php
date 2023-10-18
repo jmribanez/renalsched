@@ -105,7 +105,7 @@ class ScheduleController extends Controller
         $year = $request->year;
 
         // Firefly-specific variables
-        $populationSize = 1;   // Run time at 1000 is 1.76 seconds only
+        $populationSize = 10;   // Run time at 1000 is 1.76 seconds only
         $alpha = 1;
         $gamma = 1;
         $initialSolution = array();
@@ -258,6 +258,12 @@ class ScheduleController extends Controller
                 // }
             // End for loop per technician
             }
+
+            // Apply a fix to correct the morning count
+            foreach($weekdays as $wki => $wkv ) {
+                $morningCount[$wki] -= $dawnCount[$wki];
+            }
+
             // unfilled shift count: check dawn,morning,afternoon,eveningCount arrays
             //dd(print_r(array_count_values($morningCount)));
             if(in_array(0,$dawnCount)) {
