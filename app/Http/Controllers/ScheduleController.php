@@ -105,7 +105,7 @@ class ScheduleController extends Controller
         $year = $request->year;
 
         // Firefly-specific variables
-        $populationSize = 10;   // Run time at 1000 is 1.76 seconds only
+        $populationSize = 1000;   // Run time at 1000 is 1.76 seconds only
         $alpha = 1;
         $gamma = 1;
         $initialSolution = array();
@@ -293,7 +293,14 @@ class ScheduleController extends Controller
          *   2. Sort the new array in ascending order. Higher value currently means more penalties incurred. - OK
          *   For i to maximum iterations, do
          *   3. Compute distance
+         *      - How can we quantify the distance between solutions?
+         *          - What if x is the solution and f(x) is the objective function?
+         *      - If the solutions are already sorted with the most optimal at the start, how can latter solutions be better?
          *   4. Perform movement
+         *      - What makes a movement?
+         *          - Does it involve changing shifts?
+         *          - Will solutions copy other solutions?
+         *      - Will every solution make a movement?
          *   5. Get objective function values
          *   6. Sort the solutions again.
          *   7. Repeat
