@@ -105,7 +105,11 @@ class ScheduleController extends Controller
         $year = $request->year;
 
         // Firefly-specific variables
+<<<<<<< Updated upstream
         $populationSize = 10;   // Run time at 1000 is 1.76 seconds only
+=======
+        $populationSize = 1;   // Run time at 1000 is 1.76 seconds only when plugged in
+>>>>>>> Stashed changes
         $alpha = 1;
         $gamma = 1;
         $initialSolution = array();
