@@ -6,11 +6,13 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1>{{date_format($generatedMonth,"F Y")}} Schedule</h1>
             <div class="d-flex">
+                @if(count($scheduleMonth)>0)
                 <form method="POST" action="{{route('schedules.destroy',[date_format($generatedMonth,'Y'),date_format($generatedMonth,'m')])}}">
                 @csrf
                 @method('delete')
                 <input type="submit" value="Delete" class="btn btn-outline-danger me-5">
                 </form>
+                @endif
                 <a href="/schedules/{{date_format($previousDate,"Y/m")}}" class="btn btn-secondary me-2"><i class="fa-solid fa-backward"></i></a>
                 <a href="/schedules/{{date_format($nextDate,"Y/m")}}" class="btn btn-secondary"><i class="fa-solid fa-forward"></i></a>
             </div>

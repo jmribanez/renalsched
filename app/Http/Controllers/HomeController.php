@@ -10,12 +10,12 @@ class HomeController extends Controller
 {
     //
     public function index() {
-        $seniorCount = Technician::getSenior();
-        $ordinaryCount = Technician::getOrdinary();
+        // $seniorCount = Technician::getSenior();
+        // $ordinaryCount = Technician::getOrdinary();
         $generatedMonths = Schedule::getGeneratedMonths();
         return view('welcome')
-            ->with('seniorCount', $seniorCount)
-            ->with('ordinaryCount', $ordinaryCount)
+            // ->with('seniorCount', $seniorCount)
+            // ->with('ordinaryCount', $ordinaryCount)
             ->with('generatedMonths', $generatedMonths);
     }
 }
