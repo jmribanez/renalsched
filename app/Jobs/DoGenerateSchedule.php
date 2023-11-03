@@ -226,7 +226,7 @@ class DoGenerateSchedule implements ShouldQueue
             array_push($initialSolution, $solution);
             array_push($penalties, [$offbalanceshifts, $consecutiveshifts, $unfilledshifts]);
         }
-        
+      
         // Perform Firefly algorithm here
         /**
          *   1. For each solution in $initialSolutions, read $penalties, assign to new array the value of initialsolution at index
@@ -255,6 +255,31 @@ class DoGenerateSchedule implements ShouldQueue
         array_multisort($objectiveFunctionValues, $initialSolution);
         // $debugMessages .= "Solutions sorted. Best solution has objValue of " . $objectiveFunctionValues[0] . ". ";
 
+        // TODO: Transform $initialSolution to become $fireflies[i]['solution'] = $initialSolution[i];
+        // TODO: Transform $penalties to become $fireflies[i]['fitness'] = $penalties[i];
+
+        for($i=0; $i<$maxIterations; $i++) {
+
+            // Update attractiveness and move fireflies
+            // foreach firefly to all
+            // foreach nextFirefly to all. Just make sure it doesn't check itself.
+                // Compute Distance
+
+                // Compute attractiveness
+
+                // Move fireflies
+
+                // Recompute objectiveFunctionValues
+
+            // Update fireflies with the new positions
+                // if the firefly has a lower objectiveFunctionValue, replace it with the new one
+
+            // Check terminating condition if true
+
+        }
+
+        // Sort all fireflies to have the lowest objectiveFunctionValueto the first index.
+
         // Write only the best solution to the database
         // For the meantime, put first solution in.
         for($k=0; $k<sizeof($initialSolution[0]); $k++) {
@@ -264,6 +289,15 @@ class DoGenerateSchedule implements ShouldQueue
             $sched->shift = $initialSolution[0][$k][2];
             $sched->save();
         }
+    }
+
+    /**
+     * This function takes in 2 arrays and calculates their Hamming distance.
+     * Hamming Distance refers to similarity in their value. Each difference
+     * increments a counter by one. This returns an integer.
+     */
+    private function calculateDistance($firefly1, $firefly2) {
+
     }
 
     /**
