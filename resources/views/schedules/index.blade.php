@@ -149,6 +149,7 @@
                 @endif
             </tbody>
         </table>
+        <p>&#10033; If the table is incomplete after generating, please refresh the page.</p>
         <?php if(session('debugMessages')):?>
         <h3>Debug Messages</h3>
         <p>{{session('debugMessages')}}</p>

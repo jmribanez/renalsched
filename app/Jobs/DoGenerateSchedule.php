@@ -10,6 +10,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Schedule;
 use App\Models\Technician;
+use Illuminate\Support\Facades\Log;
 
 class DoGenerateSchedule implements ShouldQueue
 {
@@ -255,24 +256,41 @@ class DoGenerateSchedule implements ShouldQueue
         array_multisort($objectiveFunctionValues, $initialSolution);
         // $debugMessages .= "Solutions sorted. Best solution has objValue of " . $objectiveFunctionValues[0] . ". ";
 
-        // TODO: Transform $initialSolution to become $fireflies[i]['solution'] = $initialSolution[i];
-        // TODO: Transform $penalties to become $fireflies[i]['fitness'] = $penalties[i];
+        $fireflies = array();
 
+        foreach($initialSolution as $iSolKey => $iSolValue) {
+            array_push($fireflies, ['fitness' => $objectiveFunctionValues[$iSolKey], 'solution' => $iSolValue]);
+        }
+        Log::info("Starting maxiterations");
         for($i=0; $i<$maxIterations; $i++) {
-
+            
             // Update attractiveness and move fireflies
             // foreach firefly to all
-            // foreach nextFirefly to all. Just make sure it doesn't check itself.
-                // Compute Distance
+            // foreach nextFirefly to all
+            foreach($fireflies as $ffi => $firefly1) {
+                foreach($fireflies as $ffj => $firefly2) {
+                    if($firefly1['fitness'] < $firefly2['fitness']) {
+                        // Compute Distance
+                        $distance = $this->calculateDistance($firefly1['solution'], $firefly2['solution']);
 
-                // Compute attractiveness
+                        // Compute attractiveness
+                        // Scaling factor is currently 1
+                        $attractiveness = 1 * exp(-$gamma * pow($distance,2));
 
-                // Move fireflies
-
-                // Recompute objectiveFunctionValues
+                        // Move fireflies
+                        $numDimensions = count($firefly1['solution']);
+                        for($k=0; $k<$numDimensions; $k++) {
+                            $rand = (rand(0, 1000) - 500) / 1000.0; // Random perturbation
+                            $fireflies[$ffi]['solution'][$k] = $attractiveness * ($firefly2['solution'][$k] - $firefly1['solution'][$k]) + $alpha * $rand;
+                        }
+                    }
+                }
+            }          
+            // Apply constraints
 
             // Update fireflies with the new positions
                 // if the firefly has a lower objectiveFunctionValue, replace it with the new one
+                // TODO: Re-implement the getObjectiveFunctionValue function below.
 
             // Check terminating condition if true
 
@@ -282,7 +300,7 @@ class DoGenerateSchedule implements ShouldQueue
 
         // Write only the best solution to the database
         // For the meantime, put first solution in.
-        for($k=0; $k<sizeof($initialSolution[0]); $k++) {
+        for($k=0; $k<sizeof($fireflies[0]['solution']); $k++) {
             $sched = new Schedule();
             $sched->schedule = $initialSolution[0][$k][0];
             $sched->technician_id = $initialSolution[0][$k][1];
@@ -297,7 +315,20 @@ class DoGenerateSchedule implements ShouldQueue
      * increments a counter by one. This returns an integer.
      */
     private function calculateDistance($firefly1, $firefly2) {
-
+        // Assumption: both fireflies have the same size
+        // Note: this will use Hamming distance but not strictly on/off.
+        // This is more of whether each technician has the same shift in another generated sched.
+        // This function received the 'solution' array for both ff1 and ff2.
+        // Foreach generated date/shift for ff1, compare it with that of ff2.
+        // We are reading index 2 because it contains the shift data to see if they match.
+        $distance = 0;
+        foreach($firefly1 as $ff1k => $ff1v) {
+            $ff2v = $firefly2[$ff1k];
+            if($ff1v[2] != $ff2v[2]) {
+                $distance++;
+            }
+        }
+        return $distance;
     }
 
     /**
