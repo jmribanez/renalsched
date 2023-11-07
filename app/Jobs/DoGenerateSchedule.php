@@ -41,6 +41,7 @@ class DoGenerateSchedule implements ShouldQueue
      */
     public function handle(): void
     {
+        Log::info("Initiating Do Generate Schedule");
         // Schedule-specific variables
         $month = $this->month;
         $year = $this->year;
@@ -269,19 +270,47 @@ class DoGenerateSchedule implements ShouldQueue
             // foreach nextFirefly to all
             foreach($fireflies as $ffi => $firefly1) {
                 foreach($fireflies as $ffj => $firefly2) {
+                    Log::info("ff1 attr: " . $firefly1['fitness'] . " and ff2 attr:" . $firefly2['fitness']);
                     if($firefly1['fitness'] < $firefly2['fitness']) {
                         // Compute Distance
                         $distance = $this->calculateDistance($firefly1['solution'], $firefly2['solution']);
-
+                        Log::info("Computed distance: " . $distance);
+                        /**
+                         * OBSERVATION:
+                         * The computed distances are in the range of 178 - 219. If 178 is squared is 31684.
+                         * This was obtained by getting the differences in shifts per solution. Each difference
+                         * increments the returned distance by 1.
+                         * [2023-11-01, 3, 'M'] vs [2023-11-01, 3, 'A']
+                         * It has been observed that as the value of distance increases, the computed attractiveness
+                         *      falls closer to 0 because the significant figures get smaller. For example, a distance
+                         *      of 144 already yields e-63. If it were squared, the Windows calculator reports "overflow".
+                         * 
+                         * QUESTION:
+                         * 1. Is the difference between shifts (D/M vs A vs E vs H vs O) a valid metric or should it only be whether 
+                         * the employee is at work or not (O vs non-O)?
+                         * 2. If we go with the first option, can any suggestions be made to have a smaller distance value?
+                         */
                         // Compute attractiveness
                         // Scaling factor is currently 1
                         $attractiveness = 1 * exp(-$gamma * pow($distance,2));
-
-                        // Move fireflies
-                        $numDimensions = count($firefly1['solution']);
-                        for($k=0; $k<$numDimensions; $k++) {
-                            $rand = (rand(0, 1000) - 500) / 1000.0; // Random perturbation
-                            $fireflies[$ffi]['solution'][$k] = $attractiveness * ($firefly2['solution'][$k] - $firefly1['solution'][$k]) + $alpha * $rand;
+                        Log::info("Attractiveness between index " . $ffi . " and " . $ffj . " is " . $attractiveness . ". ");
+                        if($attractiveness > 0) {
+                            // Move fireflies
+                            $numDimensions = sizeof($firefly1['solution']);
+                            for($k=0; $k<$numDimensions; $k++) {
+                                Log::info("Pretending to move.");
+                                // $rand = (rand(0, 1000) - 500) / 1000.0; // Random perturbation
+                                // $fireflies[$ffi]['solution'][$k] = $attractiveness * ($firefly2['solution'][$k] - $firefly1['solution'][$k]) + $alpha * $rand;
+                                /**
+                                 * OBSERVATION:
+                                 * Most codes provided online factor in a random step with the alpha value for movement.
+                                 * We are dealing with letters to denote the shifts.
+                                 * 
+                                 * QUESTION:
+                                 * 1. Can movement be copying the shift of the second firefly to the first firefly?
+                                 * 2. How can movement include the alpha and random value if we are using letters to denote the shifts?
+                                 */
+                            }
                         }
                     }
                 }
@@ -324,6 +353,7 @@ class DoGenerateSchedule implements ShouldQueue
         $distance = 0;
         foreach($firefly1 as $ff1k => $ff1v) {
             $ff2v = $firefly2[$ff1k];
+            // Log::info("ff1v: " . $ff1v[2] . " and ff2v: " . $ff2v[2]);
             if($ff1v[2] != $ff2v[2]) {
                 $distance++;
             }
