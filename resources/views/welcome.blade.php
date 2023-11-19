@@ -30,21 +30,21 @@
                     <div class="row my-2">
                         <div class="col-6">
                             <label for="txtPopulationSize">Population Size</label>
-                            <input type="number" name="populationSize" id="txtPopulationSize" class="form-control" value="{{$populationSize??100}}" min="1" max="32767" required {{(isset($populationSize))?'disabled':''}}>
+                            <input type="number" name="populationSize" id="txtPopulationSize" class="form-control" value="{{$populationSize??10}}" min="1" max="100" required {{(isset($populationSize))?'disabled':''}}>
                         </div>
                         <div class="col-6">
                             <label for="txtMaxIterations">Max Iterations</label>
-                            <input type="number" name="maxIterations" id="txtMaxIterations" class="form-control" value="{{$maxIterations??100}}" min="1" max="32767" required {{(isset($maxIterations))?'disabled':''}}>
+                            <input type="number" name="maxIterations" id="txtMaxIterations" class="form-control" value="{{$maxIterations??10}}" min="1" max="100" required {{(isset($maxIterations))?'disabled':''}}>
                         </div>
                     </div>
                     <div class="row mt-2">
                         <div class="col-6">
                             <label for="txtAlpha">Alpha</label>
-                            <input type="number" name="alpha" id="txtAlpha" value="{{$alpha??1}}" min="0.1" max="32767" step="0.01" class="form-control" {{(isset($alpha))?'disabled':''}}>
+                            <input type="number" name="alpha" id="txtAlpha" value="{{$alpha??1}}" min="0.1" max="2" step="0.01" class="form-control" {{(isset($alpha))?'disabled':''}}>
                         </div>
                         <div class="col-6">
                             <label for="txtGamma">Gamma</label>
-                            <input type="number" name="gamma" id="txtGamma" value="{{$gamma??1}}" min="0.1" max="32767" step="0.01" class="form-control" {{(isset($gamma))?'disabled':''}}>
+                            <input type="number" name="gamma" id="txtGamma" value="{{$gamma??1}}" min="0.1" max="2" step="0.01" class="form-control" {{(isset($gamma))?'disabled':''}}>
                         </div>
                     </div>
                     @if(!isset($month))

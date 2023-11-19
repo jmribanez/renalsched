@@ -7,10 +7,11 @@
             <h1>{{date_format($generatedMonth,"F Y")}} Schedule</h1>
             <div class="d-flex">
                 @if(count($scheduleMonth)>0)
+                <button class="btn btn-outline-secondary me-2">Download CSV</button>
                 <form method="POST" action="{{route('schedules.destroy',[date_format($generatedMonth,'Y'),date_format($generatedMonth,'m')])}}">
                 @csrf
                 @method('delete')
-                <input type="submit" value="Delete" class="btn btn-outline-danger me-5">
+                <input type="submit" value="Delete" class="btn btn-outline-danger me-4">
                 </form>
                 @endif
                 <a href="/schedules/{{date_format($previousDate,"Y/m")}}" class="btn btn-secondary me-2"><i class="fa-solid fa-backward"></i></a>
@@ -150,6 +151,66 @@
             </tbody>
         </table>
         <p>&#10033; If the table is incomplete after generating, please refresh the page.</p>
+        <?php if(!empty($runParam)): ?>
+        <h3>Run Parameters</h3>
+        <div class="row mb-5">
+            <div class="col-sm-2">
+                <div class="card pt-3">
+                    <div class="card-body">
+                        <i class="fa-solid fa-stopwatch fa-2xl"></i>
+                        <h5 class="card-title fw-bold mt-3">{{number_format($runParam->runTime, 2)}} sec</h5>
+                        <p class="card-text">Generation Time</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <div class="card pt-3">
+                    <div class="card-body">
+                        <i class="fa-solid fa-arrows-up-down-left-right fa-2xl"></i>
+                        <h5 class="card-title fw-bold mt-3">{{$runParam->movements}}</h5>
+                        <p class="card-text">Movements</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <div class="card pt-3">
+                    <div class="card-body">
+                        <i class="fa-solid fa-people-group fa-2xl"></i>
+                        <h5 class="card-title fw-bold mt-3">{{$runParam->populationSize}}</h5>
+                        <p class="card-text">Population</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <div class="card pt-3">
+                    <div class="card-body">
+                        <i class="fa-solid fa-rotate-left fa-2xl"></i>
+                        <h5 class="card-title fw-bold mt-3">{{$runParam->maxIterations}}</h5>
+                        <p class="card-text">Max Iterations</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <div class="card pt-3">
+                    <div class="card-body">
+                        <i class="fa-solid fa-a fa-2xl"></i>
+                        <h5 class="card-title fw-bold mt-3">{{$runParam->alpha}}</h5>
+                        <p class="card-text">Alpha</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-2">
+                <div class="card pt-3">
+                    <div class="card-body">
+                        <i class="fa-solid fa-g fa-2xl"></i>
+                        <h5 class="card-title fw-bold mt-3">{{$runParam->gamma}}</h5>
+                        <p class="card-text">Gamma</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <?php endif; ?>
         <?php if(session('debugMessages')):?>
         <h3>Debug Messages</h3>
         <p>{{session('debugMessages')}}</p>

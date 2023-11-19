@@ -10,6 +10,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Schedule;
 use App\Models\Technician;
+use App\Models\RunParameters;
 use Illuminate\Support\Facades\Log;
 
 class DoGenerateSchedule implements ShouldQueue
@@ -41,6 +42,8 @@ class DoGenerateSchedule implements ShouldQueue
      */
     public function handle(): void
     {
+        $timeStart = microtime(true);
+
         Log::info("Initiating Do Generate Schedule");
         // Schedule-specific variables
         $month = $this->month;
@@ -336,6 +339,16 @@ class DoGenerateSchedule implements ShouldQueue
             $sched->shift = $initialSolution[0][$k][2];
             $sched->save();
         }
+        $timeEnd = microtime(true);
+        $runParam = new RunParameters();
+        $runParam->runForDate = $year . "-" . $month . "-01";
+        $runParam->populationSize = $populationSize;
+        $runParam->maxIterations = $maxIterations;
+        $runParam->alpha = $alpha;
+        $runParam->gamma = $gamma;
+        $runParam->runTime = number_format(($timeEnd - $timeStart), 2);
+        $runParam->movements = 0;
+        $runParam->save();
     }
 
     /**

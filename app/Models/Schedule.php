@@ -30,7 +30,9 @@ class Schedule extends Model
         return DB::table('schedules')
             ->join('technicians','schedules.technician_id','=','technicians.id')
             ->whereBetween('schedule', [$year.'-'.$month.'-01',$year.'-'.$month.'-31'])
+            ->orderBy('isSenior','DESC')
             ->orderBy('technician_id')
+            ->orderBy('schedule')
             ->get();
     }
 }

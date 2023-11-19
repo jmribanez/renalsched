@@ -21,4 +21,5 @@ Route::resource('technicians', TechnicianController::class);
 Route::get('/schedules/{year?}/{month?}',[ScheduleController::class, 'index']);
 Route::post('/schedules/generate', [ScheduleController::class,'generate'])->name('schedules.generate');
 Route::get('/schedules/check/{year}/{month}', [ScheduleController::class, 'checkGenerated']);
+Route::post('/schedules/downloadCSV', [ScheduleController::class,'downloadCSV'])->name('schedules.downloadCSV');
 Route::delete('/schedules/{year}/{month}',[ScheduleController::class,'destroy'])->name('schedules.destroy');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\DoGenerateSchedule;
+use App\Models\RunParameters;
 use App\Models\Schedule;
 use App\Models\Technician;
 use Illuminate\Http\Request;
@@ -76,6 +77,7 @@ class ScheduleController extends Controller
             $nextMonth = 1;
         }
         $nextDate = date_create(($nextYear)."-".($nextMonth)."-01");
+        $runParam = RunParameters::getMonth($generatedMonth);
         
         // Show the views
         return view('schedules.index')
@@ -85,7 +87,8 @@ class ScheduleController extends Controller
             ->with('staffDay',$staffDay)
             ->with('previousDate', $previousDate)
             ->with('nextDate', $nextDate)
-            ->with('calendarDays', $calendarDays);
+            ->with('calendarDays', $calendarDays)
+            ->with('runParam',$runParam);
     }
 
     /**
@@ -100,7 +103,14 @@ class ScheduleController extends Controller
         // global $debugMessages;
 
         // Validation of needed data
-        $this->validate($request, ['month'=>'required','year'=>'required','populationSize'=>'required','maxIterations'=>'required','alpha'=>'required','gamma'=>'required']);
+        $this->validate($request, [
+            'month'=>'required',
+            'year'=>'required',
+            'populationSize'=>'required|numeric|max:100',
+            'maxIterations'=>'required|numeric|max:100',
+            'alpha'=>'required|max:2',
+            'gamma'=>'required|max:2'
+        ]);
 
         $month = $request->month;
         $year = $request->year;
@@ -493,6 +503,15 @@ class ScheduleController extends Controller
         //
         $calendarDays = cal_days_in_month(CAL_GREGORIAN,$month,$year);
         Schedule::whereBetween('schedule',[$year."-".$month."-01",$year."-".$month."-".$calendarDays])->delete();
+        RunParameters::where('runForDate',$year."-".$month."-01")->delete();
         return redirect('schedules/'.$year."/".$month)->with('success','Schedule Deleted.');
+    }
+
+    /**
+     * Download the month as CSV
+     */
+    public function downloadCSV(string $year, string $month) {
+        $scheduleMonth = Schedule::getMonth($year,$month);
+        
     }
 }
