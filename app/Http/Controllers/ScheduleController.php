@@ -7,6 +7,8 @@ use App\Models\RunParameters;
 use App\Models\Schedule;
 use App\Models\Technician;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
 
 class ScheduleController extends Controller
 {
@@ -511,7 +513,166 @@ class ScheduleController extends Controller
      * Download the month as CSV
      */
     public function downloadCSV(string $year, string $month) {
+        // Data-specific functions
         $scheduleMonth = Schedule::getMonth($year,$month);
+        $calendarDays = cal_days_in_month(CAL_GREGORIAN,$month,$year);
+        $generatedMonth = date_create(($year)."-".($month)."-01");
+        $runParam = RunParameters::getMonth($generatedMonth);
+
+        // Create an array for the number of staff per shift
+        $dawShift = array_fill(0, $calendarDays+1, 0);
+        $morShift = array_fill(0, $calendarDays+1, 0);
+        $aftShift = array_fill(0, $calendarDays+1, 0);
+        $eveShift = array_fill(0, $calendarDays+1, 0);
+        $offShift = array_fill(0, $calendarDays+1, 0);
+        $extShift = array_fill(0, $calendarDays+1, 0);
+        $staffDay = array_fill(0, $calendarDays+1, 0);
+
+        // CSV-specific preparations
+        $csvFileName = 'ScheduleCSV '.$year."-".$month.".csv";
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $csvFileName . '"',
+        ];
+        $handle = fopen('php://output','w');
+
+        // Adding the data to the open stream
+        // LINE 1
+        $lineToInsert = array();
+        array_push($lineToInsert, "ID");
+        array_push($lineToInsert, "Designation");
+        for($i=1; $i<=$calendarDays; $i++) {
+            array_push($lineToInsert, $i);
+        }
+        array_push($lineToInsert, "Tally");
+        fputcsv($handle, $lineToInsert);
         
+        // LINE 2
+        $lineToInsert = array();
+        array_push($lineToInsert, ""); array_push($lineToInsert, "");
+        array_push($lineToInsert, substr(date_format($generatedMonth,"D"),0,2));
+        for($i=0;$i<$calendarDays-1;$i++) {
+            array_push($lineToInsert, substr(date_format((date_add($generatedMonth, date_interval_create_from_date_string("1 days"))),"D"),0,2));
+        }
+        array_push($lineToInsert, "D/M", "A", "E", "H", "O");
+        fputcsv($handle, $lineToInsert);
+
+        // LINE 3 TO NTECHNICIANS
+        $pertechDM = $pertechA = $pertechE = $pertechH = $pertechO = 0;
+        $lineToInsert = array();
+        // Read the scheduleMonth array to tally
+        foreach($scheduleMonth as $sm) {
+            // Reading of dates for output
+            $smdate = date_create($sm->schedule); 
+            $smdate = date_format($smdate,"d")."";
+            if($smdate == "01") {
+                $lineToInsert = array();
+                array_push($lineToInsert, $sm->technician_id, ($sm->isSenior=='1')?'Senior':'Ordinary');
+            }
+            array_push($lineToInsert, $sm->shift);
+            // Assembly of tally
+            $index = intval(date_format(date_create($sm->schedule),"j"));
+            switch($sm->shift) {
+                case 'D':
+                    $dawShift[$index]++;
+                    $pertechDM++;
+                    break;
+                case 'M':
+                    $morShift[$index]++;
+                    $pertechDM++;
+                    break;
+                case 'A':
+                    $aftShift[$index]++;
+                    $pertechA++;
+                    break;
+                case 'E':
+                    $eveShift[$index]++;
+                    $pertechE++;
+                    break;
+                case 'H':
+                    $extShift[$index]++;
+                    $pertechH++;
+                    break;
+                default :
+                    $offShift[$index]++;
+                    $pertechO++;
+                    break;
+            }
+            if($sm->shift!='O') {
+                $staffDay[$index]++;
+            }
+            if($smdate == $calendarDays) {
+                array_push($lineToInsert, $pertechDM, $pertechA, $pertechE, $pertechH, $pertechO);
+                $pertechDM = $pertechA = $pertechE = $pertechH = $pertechO = 0;
+                fputcsv($handle, $lineToInsert);
+            }
+        }
+
+        // LINES FOR TOTAL STAFF PER SHIFT
+        $lineToInsert = array();
+        array_push($lineToInsert, "Total Staff Per Shift");
+        fputcsv($handle, $lineToInsert);
+
+        $lineToInsert = array("","Dawn");
+        for($i=1; $i<=$calendarDays; $i++) {
+            array_push($lineToInsert, $dawShift[$i]);
+        }
+        fputcsv($handle, $lineToInsert);
+        $lineToInsert = array("","Morning");
+        for($i=1; $i<=$calendarDays; $i++) {
+            array_push($lineToInsert, $morShift[$i]);
+        }
+        fputcsv($handle, $lineToInsert);
+        $lineToInsert = array("","Afternoon");
+        for($i=1; $i<=$calendarDays; $i++) {
+            array_push($lineToInsert, $aftShift[$i]);
+        }
+        fputcsv($handle, $lineToInsert);
+        $lineToInsert = array("","Evening");
+        for($i=1; $i<=$calendarDays; $i++) {
+            array_push($lineToInsert, $eveShift[$i]);
+        }
+        fputcsv($handle, $lineToInsert);
+        $lineToInsert = array("","Extended");
+        for($i=1; $i<=$calendarDays; $i++) {
+            array_push($lineToInsert, $extShift[$i]);
+        }
+        fputcsv($handle, $lineToInsert);
+        $lineToInsert = array("","Off");
+        for($i=1; $i<=$calendarDays; $i++) {
+            array_push($lineToInsert, $offShift[$i]);
+        }
+        fputcsv($handle, $lineToInsert);
+
+        // LINE FOR TOTAL STAFF PER DAY
+        $lineToInsert = array("Total Staff Per Day");
+        fputcsv($handle, $lineToInsert);
+        $lineToInsert = array("", "");
+        for($i=1; $i<=$calendarDays; $i++) {
+            array_push($lineToInsert, $staffDay[$i]);
+        }
+        fputcsv($handle, $lineToInsert);
+
+        // RUN PARAMETERS
+        if(!empty($runParam)) {
+            $lineToInsert = array("Generated on",$runParam->created_at);
+            fputcsv($handle, $lineToInsert);
+            $lineToInsert = array("Generated for",number_format($runParam->runTime, 2) . " sec");
+            fputcsv($handle, $lineToInsert);
+            $lineToInsert = array("Movements",$runParam->movements);
+            fputcsv($handle, $lineToInsert);
+            $lineToInsert = array("Population",$runParam->populationSize);
+            fputcsv($handle, $lineToInsert);
+            $lineToInsert = array("Max Iterations",$runParam->maxIterations);
+            fputcsv($handle, $lineToInsert);
+            $lineToInsert = array("Alpha",$runParam->alpha);
+            fputcsv($handle, $lineToInsert);
+            $lineToInsert = array("Gamma",$runParam->gamma);
+            fputcsv($handle, $lineToInsert);
+        }
+        
+        // Try to output the file for testing
+        fclose($handle);
+        return Response::make('', 200, $headers);
     }
 }

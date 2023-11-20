@@ -7,11 +7,14 @@
             <h1>{{date_format($generatedMonth,"F Y")}} Schedule</h1>
             <div class="d-flex">
                 @if(count($scheduleMonth)>0)
-                <button class="btn btn-outline-secondary me-2">Download CSV</button>
                 <form method="POST" action="{{route('schedules.destroy',[date_format($generatedMonth,'Y'),date_format($generatedMonth,'m')])}}">
                 @csrf
                 @method('delete')
                 <input type="submit" value="Delete" class="btn btn-outline-danger me-4">
+                </form>
+                <form action="{{route('schedules.downloadCSV',[date_format($generatedMonth,'Y'),date_format($generatedMonth,'m')])}}" method="post">
+                @csrf
+                <input type="submit" value="Download CSV" class="btn btn-outline-secondary me-4">
                 </form>
                 @endif
                 <a href="/schedules/{{date_format($previousDate,"Y/m")}}" class="btn btn-secondary me-2"><i class="fa-solid fa-backward"></i></a>
@@ -153,6 +156,7 @@
         <p>&#10033; If the table is incomplete after generating, please refresh the page.</p>
         <?php if(!empty($runParam)): ?>
         <h3>Run Parameters</h3>
+        <p>Generated on: {{$runParam->created_at}}</p>
         <div class="row mb-5">
             <div class="col-sm-2">
                 <div class="card pt-3">
