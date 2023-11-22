@@ -110,8 +110,8 @@ class ScheduleController extends Controller
             'year'=>'required',
             'populationSize'=>'required|numeric|max:100',
             'maxIterations'=>'required|numeric|max:100',
-            'alpha'=>'required|max:2',
-            'gamma'=>'required|max:2'
+            'alpha'=>'required|numeric',
+            'gamma'=>'required|numeric'
         ]);
 
         $month = $request->month;
