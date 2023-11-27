@@ -170,15 +170,6 @@
             <div class="col-sm-2">
                 <div class="card pt-3">
                     <div class="card-body">
-                        <i class="fa-solid fa-arrows-up-down-left-right fa-2xl"></i>
-                        <h5 class="card-title fw-bold mt-3">{{$runParam->movements}}</h5>
-                        <p class="card-text">Movements</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-2">
-                <div class="card pt-3">
-                    <div class="card-body">
                         <i class="fa-solid fa-people-group fa-2xl"></i>
                         <h5 class="card-title fw-bold mt-3">{{$runParam->populationSize}}</h5>
                         <p class="card-text">Population</p>

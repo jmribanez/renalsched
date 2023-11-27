@@ -242,7 +242,7 @@ class DoGenerateSchedule implements ShouldQueue
          *      - How can we quantify the distance between solutions?
          *          - What if x is the solution and f(x) is the objective function?
          *      - If the solutions are already sorted with the most optimal at the start, how can latter solutions be better?
-         *   4. Perform movement
+        *   4. Perform movement
          *      - What makes a movement?
          *          - Does it involve changing shifts?
          *          - Will solutions copy other solutions?
@@ -253,6 +253,7 @@ class DoGenerateSchedule implements ShouldQueue
          */
 
         $objectiveFunctionValues = array();
+        $movements = 0;
         for($p=0; $p<$populationSize; $p++) {
             array_push($objectiveFunctionValues, $this->getObjectiveFunctionValue($penalties[$p]));
         }
@@ -273,7 +274,8 @@ class DoGenerateSchedule implements ShouldQueue
             // foreach nextFirefly to all
             foreach($fireflies as $ffi => $firefly1) {
                 foreach($fireflies as $ffj => $firefly2) {
-                    Log::info("ff1 attr: " . $firefly1['fitness'] . " and ff2 attr:" . $firefly2['fitness']);
+                    Log::info("ff1 fitness: " . $firefly1['fitness'] . " and ff2 fitness:" . $firefly2['fitness']);
+                    // Remember that "fitness" refers to the number of penalties. Higher value is worse schedule.
                     if($firefly1['fitness'] < $firefly2['fitness']) {
                         // Compute Distance
                         $distance = $this->calculateDistance($firefly1['solution'], $firefly2['solution']);
@@ -302,6 +304,7 @@ class DoGenerateSchedule implements ShouldQueue
                             $numDimensions = sizeof($firefly1['solution']);
                             for($k=0; $k<$numDimensions; $k++) {
                                 Log::info("Pretending to move.");
+                                $movements++;
                                 // $rand = (rand(0, 1000) - 500) / 1000.0; // Random perturbation
                                 // $fireflies[$ffi]['solution'][$k] = $attractiveness * ($firefly2['solution'][$k] - $firefly1['solution'][$k]) + $alpha * $rand;
                                 /**
@@ -347,7 +350,7 @@ class DoGenerateSchedule implements ShouldQueue
         $runParam->alpha = $alpha;
         $runParam->gamma = $gamma;
         $runParam->runTime = number_format(($timeEnd - $timeStart), 2);
-        $runParam->movements = 0;
+        $runParam->movements = $movements;
         $runParam->save();
     }
 
@@ -367,7 +370,9 @@ class DoGenerateSchedule implements ShouldQueue
         foreach($firefly1 as $ff1k => $ff1v) {
             $ff2v = $firefly2[$ff1k];
             // Log::info("ff1v: " . $ff1v[2] . " and ff2v: " . $ff2v[2]);
-            if($ff1v[2] != $ff2v[2]) {
+            // Trial -> change condition to on/off
+            if($ff1v[2] != $ff2v[2] && ($ff1v[2] == 'O' || $ff2v[2] == 'O')) {
+                // Log::info("Adding distance count");
                 $distance++;
             }
         }
